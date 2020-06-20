@@ -5,16 +5,12 @@
 
 #define FUSE_USE_VERSION 31
 
+#include "include/gitfs.h"
 #include <assert.h>
-#include <git2.h>
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <fuse.h>
-
-git_repository *repo;
-// tree of the root of the treeish that wants to be used as the root for the mount point
-git_tree *root_tree; // TODO if following a branch, this value could change... will be fixed for the time being
 
 static struct options {
 	const char *repo_path; // path to git repo,
@@ -50,8 +46,6 @@ int main(int argc, char *argv[])
         int ret;
         struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
-	git_object * treeish = NULL;
-
         /* Set defaults -- we have to use strdup so that
            fuse_opt_parse can free the defaults if other
            values are specified */
@@ -73,36 +67,9 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         }
 
-	// check that we can open the git repository
-	git_libgit2_init();
-	ret = git_repository_open(&repo, options.repo_path);
-	if (ret) {
-		// there was an error opening the repository
-		fprintf(stderr, "There was an error opening the git repo at %s\n", options.repo_path);
-		goto end;
-	}
+	ret = gitfs_init(options.repo_path, options.treeish);
 
-	printf("Successfully opened repo at %s\n", git_repository_commondir(repo));
-	ret = git_revparse_single(&treeish, repo, options.treeish);
-	if (ret) {
-		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", options.treeish);
-		goto end;
-	}
-
-	printf("Successfully parsed treeish %s\n", options.treeish);
-	ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
-	if (ret) {
-		fprintf(stderr, "Could not find tree object for the revision\n");
-		goto end;
-	}
-
-	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree)));
-end:
-	if (treeish)
-		git_object_free(treeish);
-	// going out, for the time being
-	git_libgit2_shutdown();
+	gitfs_shutdown();
 	return ret;
 }
-
 
