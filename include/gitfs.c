@@ -9,7 +9,7 @@
 #include <stddef.h>
 
 
-int gitfs_init(const char * repo_path, const char * treeish)
+int gitfs_git_init(const char * repo_path, const char * treeish)
 {
 	int ret;
 
@@ -44,7 +44,7 @@ end:
 	return ret;
 }
 
-void gitfs_shutdown()
+void gitfs_git_shutdown()
 {
 	if (gitfs_info.revision)
 		git_object_free(gitfs_info.revision);

@@ -18,12 +18,12 @@ struct gitfs_info {
 /**
  * Initialize everything
  */
-int gitfs_init(const char * repo_path, const char * treeish);
+int gitfs_git_init(const char * repo_path, const char * treeish);
 
 /**
  * Close everything
  */
-void gitfs_shutdown();
+void gitfs_git_shutdown();
 
 
 #endif

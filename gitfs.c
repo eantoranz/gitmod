@@ -29,6 +29,28 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
+static void *gitfs_init(struct fuse_conn_info *conn,
+                        struct fuse_config *cfg)
+{
+        (void) conn;
+	printf("Running gitfs_init\n");
+        cfg->kernel_cache = 1; // TODO consider what will need to be done when we track a moving branch
+        return NULL;
+}
+
+static void gitfs_destroy()
+{
+	printf("Running gitfs_destroy\n");
+	gitfs_git_shutdown();
+
+}
+
+static const struct fuse_operations gitfs_oper = {
+        .init           = gitfs_init,
+	.destroy        = gitfs_destroy,
+};
+
+
 static void show_help(const char *progname)
 {
         printf("usage: %s [options] <mountpoint>\n\n", progname);
@@ -67,9 +89,13 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         }
 
-	ret = gitfs_init(options.repo_path, options.treeish);
+	ret = gitfs_git_init(options.repo_path, options.treeish);
 
-	gitfs_shutdown();
+	if (ret)
+		gitfs_git_shutdown();
+	else
+		fuse_main(args.argc, args.argv, &gitfs_oper, NULL);
+
 	return ret;
 }
 
