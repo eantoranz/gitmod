@@ -21,6 +21,16 @@ struct gitfs_info {
 int gitfs_git_init(const char * repo_path, const char * treeish);
 
 /**
+ * Given a path, how many items are included in the path?
+ */
+int gitfs_get_num_items(const char * path);
+
+/**
+ * Get the name of the item with that index on the tree with that path
+ */
+char * gitfs_get_entry_name(const char * tree_path, int index);
+
+/**
  * Close everything
  */
 void gitfs_git_shutdown();
