@@ -10,8 +10,14 @@
 #include <errno.h>
 #include <git2.h>
 
+struct gitfs_object {
+	git_tree * tree;
+	git_tree_entry * tree_entry;
+	int git_tree_entry_dispose; // do not dispose manually
+	char * name; // local name, _not_ fullpath
+} gitfs_object;
 
-int gitfs_git_init(const char * repo_path, const char * treeish)
+int gitfs_init(const char * repo_path, const char * treeish)
 {
 	int ret;
 
@@ -46,66 +52,88 @@ end:
 	return ret;
 }
 
-static int gitfs_get_object(git_object ** object, const char *path)
+void gitfs_dispose(struct gitfs_object * object)
+{
+	if (object->tree && object->tree != gitfs_info.root_tree)
+		git_tree_free(object->tree);
+	if (object->tree_entry && object->git_tree_entry_dispose)
+		git_tree_entry_free(object->tree_entry);
+	if (object->name)
+		free(object->name);
+
+	// finally
+	free(object);
+}
+
+
+int gitfs_get_object(struct gitfs_object ** object, const char *path)
 {
 	int ret = 0;
+	if (!(strlen(path) && strcmp(path, "/"))) {
+		// root tree
+		object[0] = calloc(1, sizeof(gitfs_object));
+		object[0]->tree = gitfs_info.root_tree;
+		return 0;
+	}
 	char object_path [strlen(gitfs_info.treeish) + 1 + strlen(path)];
 	strcpy(object_path, gitfs_info.treeish);
 	strcat(object_path, ":");
 	strcat(object_path, path + 1);
 
-	ret = git_revparse_single(object, gitfs_info.repo, object_path);
+	struct gitfs_object gitfs_object;
+	ret = git_tree_entry_bypath(&gitfs_object.tree_entry, gitfs_info.root_tree, object_path);
 	if (ret) {
 		fprintf(stderr, "Could not find the object for the path %s\n", path);
+		goto end;
 	}
+	object[0] = calloc(1, sizeof(gitfs_object));
+	object[0]->tree_entry = gitfs_object.tree_entry;
+end:
 	return ret;
 }
 
-int gitfs_get_num_items(const char * path)
+int gitfs_get_num_entries(struct gitfs_object * tree)
 {
-	printf("Getting the number of items in path %s\n", path);
-	git_object * tree;
-	int ret = 0;
-
-	ret = gitfs_get_object(&tree, path);
-	if (ret) {
+	// object has to be a tree
+	if (!tree->tree) {
 		return -ENOENT;
 	}
-	// found the object
-	ret = git_tree_entrycount((git_tree *) tree);
-
-	// going out
-	git_object_free(tree);
-
-	return ret;
+	return git_tree_entrycount(tree->tree);
 }
 
-char * gitfs_get_entry_name(const char * tree_path, int index)
+int gitfs_get_tree_entry(struct gitfs_object ** entry, struct gitfs_object * tree, int index)
 {
-	char * name = NULL;
-	git_object * tree = NULL;
-	printf("Getting name of entry %d in tree with path %s\n", index, tree_path);
-	int ret = gitfs_get_object(&tree, tree_path);
+	if (!tree->tree) {
+		// not a tree
+		return -ENOENT;
+	}
+	git_tree_entry * git_entry = (git_tree_entry *) git_tree_entry_byindex(tree->tree, index);
+	if (!git_entry) {
+		fprintf(stderr, "No entry in tree for index %d\n", index);
+		return -ENOENT;
+	}
+	// got the entry
+	entry[0] = calloc(1, sizeof(gitfs_object));
+	entry[0]->tree_entry = git_entry;
+	return 0;
+}
 
-	if (ret) {
-		// could not get tree
+char * gitfs_get_name(struct gitfs_object * object)
+{
+	char * name = object->name;
+	if (name)
+		// already had it, no need to get it again
+		goto end;
+	if (object->tree_entry) {
+		name = strdup(git_tree_entry_name(object->tree_entry));
 		goto end;
 	}
-	// found the tree
-	const git_tree_entry * entry = git_tree_entry_byindex((const git_tree *) tree, index);
-	if (!entry) {
-		goto end;
-	}
-	name = strdup(git_tree_entry_name(entry));
-	printf("Entry name: %s\n", name);
 end:
-	if (tree) {
-		git_object_free(tree);
-	}
+	object->name = name;
 	return name;
 }
 
-void gitfs_git_shutdown()
+void gitfs_shutdown()
 {
 	if (gitfs_info.revision)
 		git_object_free(gitfs_info.revision);

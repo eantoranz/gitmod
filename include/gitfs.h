@@ -15,25 +15,30 @@ struct gitfs_info {
 	git_tree * root_tree;
 } gitfs_info;
 
+struct gitfs_object;
+
+void gitfs_dispose(struct gitfs_object * object);
+
 /**
  * Initialize everything
  */
-int gitfs_git_init(const char * repo_path, const char * treeish);
+int gitfs_init(const char * repo_path, const char * treeish);
 
 /**
- * Given a path, how many items are included in the path?
+ * Get the object associated with this path
  */
-int gitfs_get_num_items(const char * path);
+int gitfs_get_object(struct gitfs_object ** object, const char * path);
 
-/**
- * Get the name of the item with that index on the tree with that path
- */
-char * gitfs_get_entry_name(const char * tree_path, int index);
+int gitfs_get_num_entries(struct gitfs_object * object);
+
+int gitfs_get_tree_entry(struct gitfs_object ** entry, struct gitfs_object * tree, int index);
+
+char * gitfs_get_name(struct gitfs_object * object);
 
 /**
  * Close everything
  */
-void gitfs_git_shutdown();
+void gitfs_shutdown();
 
 
 #endif

@@ -32,7 +32,7 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-static void *gitfs_init(struct fuse_conn_info *conn,
+static void *gitfs_fs_init(struct fuse_conn_info *conn,
                         struct fuse_config *cfg)
 {
         (void) conn;
@@ -51,17 +51,19 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 
         memset(stbuf, 0, sizeof(struct stat));
         if (!strcmp(path, "/")) { // root node is a directory
-		int items;
 		printf("It's the root node\n");
 		stbuf->st_uid = getuid();
 		stbuf->st_gid = getgid();
                 stbuf->st_mode = S_IFDIR | 0755;
-                items = gitfs_get_num_items(path);
-		if (items < 0) {
+		struct gitfs_object * root_node;
+		if (!gitfs_get_object(&root_node, path)) {
+			// it went fine
+			stbuf->st_nlink = gitfs_get_num_entries(root_node) + 2;
+			gitfs_dispose(root_node);
+		} else {
 			stbuf->st_nlink = 2;
 			return -ENOENT;
 		}
-		stbuf->st_nlink = items + 2;
 	} else
                 res = -ENOENT;
 
@@ -83,14 +85,23 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	int num_items = gitfs_get_num_items(path);
+	struct gitfs_object * root_node;
+	if (gitfs_get_object(&root_node, path)) {
+		// did not find the node
+		return -ENOENT;
+	}
+	int num_items = gitfs_get_num_entries(root_node);
+	struct gitfs_object * entry;
 	for (int i=0; i < num_items; i++) {
-		char * item_path = gitfs_get_entry_name(path, i);
-		if (item_path) {
-			filler(buf, item_path, NULL, 0, 0);
-			free(item_path);
+		int ret = gitfs_get_tree_entry(&entry, root_node, i);
+		if (!ret) {
+			char * name = gitfs_get_name(entry);
+			if (name)
+				filler(buf, name, NULL, 0, 0);
+			gitfs_dispose(entry);
 		}
 	}
+	gitfs_dispose(root_node);
 
         return 0;
 }
@@ -98,12 +109,12 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static void gitfs_destroy()
 {
 	printf("Running gitfs_destroy()\n");
-	gitfs_git_shutdown();
+	gitfs_shutdown();
 
 }
 
 static const struct fuse_operations gitfs_oper = {
-        .init           = gitfs_init,
+        .init           = gitfs_fs_init,
 	.getattr        = gitfs_getattr,
 	.readdir        = gitfs_readdir,
 	.destroy        = gitfs_destroy,
@@ -148,10 +159,10 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         }
 
-	ret = gitfs_git_init(options.repo_path, options.treeish);
+	ret = gitfs_init(options.repo_path, options.treeish);
 
 	if (ret)
-		gitfs_git_shutdown();
+		gitfs_shutdown();
 	else
 		fuse_main(args.argc, args.argv, &gitfs_oper, NULL);
 
