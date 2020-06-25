@@ -21,8 +21,9 @@ void testGetRootTree()
 {
 	struct gitfs_object * root_tree;
         int res = gitfs_get_object(&root_tree, "/");
-	CU_ASSERT(res == 0);
-	if (root_tree) {
+	CU_ASSERT(!res);
+	if (!res) {
+		CU_ASSERT(gitfs_get_object_type(root_tree) == GITFS_TREE);
 		int num_items = gitfs_get_num_entries(root_tree);
 		CU_ASSERT(num_items == 5);
 
@@ -30,7 +31,7 @@ void testGetRootTree()
 		struct gitfs_object * entry;
 		for (int i=0; i < num_items; i++) {
 			res = gitfs_get_tree_entry(&entry, root_tree, i);
-			CU_ASSERT(res == 0);
+			CU_ASSERT(!res);
 			if (res == 0) {
 				char * name = gitfs_get_name(entry);
 				switch (i) {
@@ -53,7 +54,7 @@ void testGetRootTree()
 						name = "***unknown item.... need to add more values***";
 				}
 				res = strcmp(name, gitfs_get_name(entry));
-				CU_ASSERT(res == 0);
+				CU_ASSERT(!res);
 				if (res)
 					printf("Item %d: Was expecting item to be named %s but got %s\n", i, name, gitfs_get_name(entry));
 				gitfs_dispose(entry);
@@ -66,13 +67,27 @@ void testGetRootTree()
 	}
 }
 
-void testGetObjectByPath()
+void testGetObjectByPathBlob()
 {
 	struct gitfs_object * object;
 	int res = gitfs_get_object(&object, "/tests/test.c");
-	CU_ASSERT(res == 0);
+	CU_ASSERT(!res);
 	if (!res) {
-		// TODO check the other values for the item
+		CU_ASSERT(gitfs_get_object_type(object) == GITFS_BLOB);
+		gitfs_dispose(object);
+	}
+}
+
+void testGetObjectByPathTree()
+{
+	struct gitfs_object * object;
+	int res = gitfs_get_object(&object, "tests");
+	CU_ASSERT(!res);
+	if (!res) {
+		CU_ASSERT(gitfs_get_object_type(object) == GITFS_TREE);
+		int tree_entries = gitfs_get_num_entries(object);
+		printf("Entries en el tree: %d\n", tree_entries);
+		CU_ASSERT(tree_entries == 1);
 		gitfs_dispose(object);
 	}
 }
@@ -81,7 +96,7 @@ void testGetNonExistingObjectByPath()
 {
 	struct gitfs_object * object;
 	int res = gitfs_get_object(&object, "blahblah");
-	CU_ASSERT(res != 0);
+	CU_ASSERT(res);
 }
 
 int shutdown_gitfs()
@@ -107,8 +122,9 @@ int main()
 
 	/* add the tests to the suite */
 	if (!(CU_add_test(pSuite, "test revision info", testRevisionInfo) &&
-		CU_add_test(pSuite, "test of getRoottTree", testGetRootTree) &&
-		CU_add_test(pSuite, "test of getObjectByPath", testGetObjectByPath) &&
+		CU_add_test(pSuite, "test of getRootTree", testGetRootTree) &&
+		CU_add_test(pSuite, "test of getObjectByPathiBlob", testGetObjectByPathBlob) &&
+		CU_add_test(pSuite, "test of getObjectByPathTree", testGetObjectByPathTree) &&
 		CU_add_test(pSuite, "test of getNonExisingObjectByPath", testGetNonExistingObjectByPath)))
 	{
 		CU_cleanup_registry();

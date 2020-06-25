@@ -90,13 +90,36 @@ end:
 	return ret;
 }
 
-int gitfs_get_num_entries(struct gitfs_object * tree)
+enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object) {
+	if (object->tree) {
+		return GITFS_TREE;
+	}
+	if (object->tree_entry) {
+		git_otype otype = git_tree_entry_type(object->tree_entry);
+		if (otype == GIT_OBJ_BLOB) {
+			return GITFS_BLOB;
+		} else if (otype == GIT_OBJ_TREE) {
+			return GITFS_TREE;
+		}
+	}
+	return GITFS_UNKNOWN;
+}
+
+int gitfs_get_num_entries(struct gitfs_object * object)
 {
-	// object has to be a tree
-	if (!tree->tree) {
+	if (gitfs_get_object_type(object) != GITFS_TREE) {
 		return -ENOENT;
 	}
-	return git_tree_entrycount(tree->tree);
+	if (object->tree_entry) {
+		git_object * entry_object;
+		int res = git_tree_entry_to_object(&entry_object, gitfs_info.repo, object->tree_entry);
+		if (res)
+			return -ENOENT;
+		res = git_tree_entrycount((git_tree *) entry_object);
+		git_tree_free((git_tree *) entry_object);
+		return res;
+	}
+	return git_tree_entrycount(object->tree);
 }
 
 int gitfs_get_tree_entry(struct gitfs_object ** entry, struct gitfs_object * tree, int index)

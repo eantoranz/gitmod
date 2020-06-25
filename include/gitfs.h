@@ -16,6 +16,12 @@ struct gitfs_info {
 	time_t time; // time associated to the revision
 } gitfs_info;
 
+enum gitfs_object_type {
+	GITFS_UNKNOWN,
+	GITFS_TREE,
+	GITFS_BLOB
+};
+
 struct gitfs_object;
 
 void gitfs_dispose(struct gitfs_object * object);
@@ -29,6 +35,8 @@ int gitfs_init(const char * repo_path, const char * treeish);
  * Get the object associated with this path
  */
 int gitfs_get_object(struct gitfs_object ** object, const char * path);
+
+enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object);
 
 int gitfs_get_num_entries(struct gitfs_object * object);
 
