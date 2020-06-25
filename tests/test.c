@@ -8,7 +8,7 @@
 
 int init_gitfs()
 {
-	return gitfs_init(".", "20b10490cd7ef3041b07dc9");
+	return gitfs_init(".", "583510cd3ae56e");
 }
 
 void testGetRootTree()
@@ -40,13 +40,16 @@ void testGetRootTree()
 					case 3:
 						name = "include";
 						break;
+					case 4:
+						name = "tests";
+						break;
 					default:
 						name = "***unknown item.... need to add more values***";
 				}
 				res = strcmp(name, gitfs_get_name(entry));
 				CU_ASSERT(res == 0);
 				if (res)
-					printf("Was expecting item to be named %s but got %s\n", name, gitfs_get_name(entry));
+					printf("Item %d: Was expecting item to be named %s but got %s\n", i, name, gitfs_get_name(entry));
 				gitfs_dispose(entry);
 			}
 		}
