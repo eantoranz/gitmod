@@ -47,29 +47,30 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
         (void) fi;
         int res = 0;
 
+
 	printf("Running gitfs_getattr(\"%s\", ...)\n", path);
 
-        memset(stbuf, 0, sizeof(struct stat));
-        if (!strcmp(path, "/")) { // root node is a directory
-		printf("It's the root node\n");
-		stbuf->st_uid = getuid();
-		stbuf->st_gid = getgid();
-                stbuf->st_mode = S_IFDIR | 0755;
-		struct gitfs_object * root_node;
-		if (!gitfs_get_object(&root_node, path)) {
-			// it went fine
-			stbuf->st_nlink = gitfs_get_num_entries(root_node) + 2;
-			stbuf->st_atime = gitfs_info.time;
-			stbuf->st_ctime = gitfs_info.time;
-			stbuf->st_mtime = gitfs_info.time;
+	struct gitfs_object * object;
+	if (gitfs_get_object(&object, path)) {
+		return -ENOENT;
+	}
 
-			gitfs_dispose(root_node);
-		} else {
-			stbuf->st_nlink = 2;
-			return -ENOENT;
-		}
-	} else
-                res = -ENOENT;
+        memset(stbuf, 0, sizeof(struct stat));
+	stbuf->st_atime = gitfs_info.time;
+	stbuf->st_ctime = gitfs_info.time;
+	stbuf->st_mtime = gitfs_info.time;
+	stbuf->st_uid = getuid();
+	stbuf->st_gid = getgid();
+        if (!strcmp(path, "/")) { // this will depend on the type of object
+                stbuf->st_mode = S_IFDIR | 0755;
+		// it went fine
+		stbuf->st_nlink = gitfs_get_num_entries(object) + 2;
+	} else {
+		stbuf->st_mode = S_IFREG | 0644; // TODO figure out the type of object that it is
+		stbuf->st_nlink = 1;
+		// TODO what is the size?
+	}
+	gitfs_dispose(object);
 
         return res;
 }

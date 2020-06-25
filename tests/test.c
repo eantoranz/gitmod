@@ -66,6 +66,24 @@ void testGetRootTree()
 	}
 }
 
+void testGetObjectByPath()
+{
+	struct gitfs_object * object;
+	int res = gitfs_get_object(&object, "/tests/test.c");
+	CU_ASSERT(res == 0);
+	if (!res) {
+		// TODO check the other values for the item
+		gitfs_dispose(object);
+	}
+}
+
+void testGetNonExistingObjectByPath()
+{
+	struct gitfs_object * object;
+	int res = gitfs_get_object(&object, "blahblah");
+	CU_ASSERT(res != 0);
+}
+
 int shutdown_gitfs()
 {
 	gitfs_shutdown();
@@ -89,7 +107,9 @@ int main()
 
 	/* add the tests to the suite */
 	if (!(CU_add_test(pSuite, "test revision info", testRevisionInfo) &&
-		CU_add_test(pSuite, "test of getRoottTree", testGetRootTree)))
+		CU_add_test(pSuite, "test of getRoottTree", testGetRootTree) &&
+		CU_add_test(pSuite, "test of getObjectByPath", testGetObjectByPath) &&
+		CU_add_test(pSuite, "test of getNonExisingObjectByPath", testGetNonExistingObjectByPath)))
 	{
 		CU_cleanup_registry();
 		return CU_get_error();

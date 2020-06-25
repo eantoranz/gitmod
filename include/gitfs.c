@@ -76,19 +76,16 @@ int gitfs_get_object(struct gitfs_object ** object, const char *path)
 		object[0]->tree = gitfs_info.root_tree;
 		return 0;
 	}
-	char object_path [strlen(gitfs_info.treeish) + 1 + strlen(path)];
-	strcpy(object_path, gitfs_info.treeish);
-	strcat(object_path, ":");
-	strcat(object_path, path + 1);
 
 	struct gitfs_object gitfs_object;
-	ret = git_tree_entry_bypath(&gitfs_object.tree_entry, gitfs_info.root_tree, object_path);
+	ret = git_tree_entry_bypath(&gitfs_object.tree_entry, gitfs_info.root_tree, path + (path[0] == '/' ? 1 : 0));
 	if (ret) {
 		fprintf(stderr, "Could not find the object for the path %s\n", path);
 		goto end;
 	}
 	object[0] = calloc(1, sizeof(gitfs_object));
 	object[0]->tree_entry = gitfs_object.tree_entry;
+	object[0]->git_tree_entry_dispose = 1; // has to be manually disposed of because we used git_tree_entry_bypath
 end:
 	return ret;
 }
