@@ -46,6 +46,7 @@ int gitfs_init(const char * repo_path, const char * treeish)
 		fprintf(stderr, "Could not find tree object for the revision\n");
 		goto end;
 	}
+	gitfs_info.time = git_commit_time((git_commit *) gitfs_info.revision);
 
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(gitfs_info.root_tree)));
 end:

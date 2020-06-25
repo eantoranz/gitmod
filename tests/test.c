@@ -11,6 +11,12 @@ int init_gitfs()
 	return gitfs_init(".", "583510cd3ae56e");
 }
 
+void testRevisionInfo()
+{
+	printf("Revision time: %ld\n", gitfs_info.time);
+	CU_ASSERT(gitfs_info.time == 1593046557);
+}
+
 void testGetRootTree()
 {
 	struct gitfs_object * root_tree;
@@ -18,7 +24,7 @@ void testGetRootTree()
 	CU_ASSERT(res == 0);
 	if (root_tree) {
 		int num_items = gitfs_get_num_entries(root_tree);
-		CU_ASSERT(num_items == 4);
+		CU_ASSERT(num_items == 5);
 
 		// let's check the names of each one of the entries
 		struct gitfs_object * entry;
@@ -82,7 +88,8 @@ int main()
 	}
 
 	/* add the tests to the suite */
-	if (!(CU_add_test(pSuite, "test of getRoottTree", testGetRootTree)))
+	if (!(CU_add_test(pSuite, "test revision info", testRevisionInfo) &&
+		CU_add_test(pSuite, "test of getRoottTree", testGetRootTree)))
 	{
 		CU_cleanup_registry();
 		return CU_get_error();

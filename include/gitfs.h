@@ -13,6 +13,7 @@ struct gitfs_info {
 	git_repository * repo;
 	git_object * revision; // revision that is being tracked // TODO will change
 	git_tree * root_tree;
+	time_t time; // time associated to the revision
 } gitfs_info;
 
 struct gitfs_object;

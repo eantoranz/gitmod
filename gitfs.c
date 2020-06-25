@@ -59,6 +59,10 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 		if (!gitfs_get_object(&root_node, path)) {
 			// it went fine
 			stbuf->st_nlink = gitfs_get_num_entries(root_node) + 2;
+			stbuf->st_atime = gitfs_info.time;
+			stbuf->st_ctime = gitfs_info.time;
+			stbuf->st_mtime = gitfs_info.time;
+
 			gitfs_dispose(root_node);
 		} else {
 			stbuf->st_nlink = 2;
