@@ -91,6 +91,8 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct gitfs_object * dir_node = gitfs_get_object(path);
         if (!dir_node || gitfs_get_type(dir_node) != GITFS_TREE) {
 		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
+		if (dir_node)
+			gitfs_dispose(dir_node);
                 return -ENOENT;
 	}
 
@@ -112,6 +114,32 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         return 0;
 }
 
+static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
+                      struct fuse_file_info *fi)
+{
+        size_t len;
+        (void) fi;
+	struct gitfs_object * object = gitfs_get_object(path);
+	if (!object || gitfs_get_type(object) != GITFS_BLOB) {
+		fprintf(stderr, "gitfs_read: Could not find an object for path %s (or it's not a blob)\n", path);
+		if (object)
+			gitfs_dispose(object);
+		return -ENOENT;
+	}
+	
+	len = gitfs_get_size(object);
+	const char * contents = gitfs_get_content(object);
+        if (offset < len) {
+                if (offset + size > len)
+                        size = len - offset;
+                memcpy(buf, contents + offset, size);
+        } else
+                size = 0;
+	
+	gitfs_dispose(object);
+        return size;
+}
+
 static void gitfs_destroy()
 {
 	printf("Running gitfs_destroy()\n");
@@ -123,6 +151,7 @@ static const struct fuse_operations gitfs_oper = {
         .init           = gitfs_fs_init,
 	.getattr        = gitfs_getattr,
 	.readdir        = gitfs_readdir,
+	.read           = gitfs_read,
 	.destroy        = gitfs_destroy,
 };
 
