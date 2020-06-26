@@ -3,7 +3,7 @@
  * Released under the terms of GPLv2
  */
 
-#include "gitfs.h"
+#include "gitfstrack.h"
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>

@@ -4,7 +4,7 @@
  */
 
 #include <CUnit/Basic.h>
-#include "../include/gitfs.h"
+#include "../include/gitfstrack.h"
 
 int init_gitfs()
 {
