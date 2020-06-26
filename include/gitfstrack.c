@@ -17,6 +17,34 @@ struct gitfs_object {
 	char * path; // full path
 } gitfs_object;
 
+/**
+ * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
+ */
+static git_tree * gitfs_get_root_tree() {
+	int ret;
+	git_object * revision;
+	ret = git_revparse_single(&revision, gitfs_info.repo, gitfs_info.treeish);
+	if (ret) {
+		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", gitfs_info.treeish);
+		return NULL;
+	}
+
+	// TODO how can I make sure the object is a git_commit?
+	printf("Successfully parsed treeish %s\n", gitfs_info.treeish);
+	git_tree * root_tree;
+	ret =  git_commit_tree(&root_tree, (git_commit *) revision);
+	if (ret) {
+		fprintf(stderr, "Could not find tree object for the revision\n");
+		root_tree = NULL;
+		goto end;
+	}
+	gitfs_info.time = git_commit_time((git_commit *) revision);
+end:
+	git_object_free(revision);
+	
+	return root_tree;
+}
+
 int gitfs_init(const char * repo_path, const char * treeish)
 {
 	int ret;
@@ -33,30 +61,22 @@ int gitfs_init(const char * repo_path, const char * treeish)
 	}
 
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitfs_info.repo));
-	ret = git_revparse_single(&gitfs_info.revision, gitfs_info.repo, treeish);
-	if (ret) {
-		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", treeish);
-		goto end;
+	git_tree * root_tree = gitfs_get_root_tree();
+	if (!root_tree) {
+		fprintf(stderr, "Could not open root tree for treeish");
+		return -ENOENT;
 	}
-
-	// TODO how can I make sure the object is a git_commit?
-	printf("Successfully parsed treeish %s\n", treeish);
-	ret =  git_commit_tree(&gitfs_info.root_tree, (git_commit *) gitfs_info.revision);
-	if (ret) {
-		fprintf(stderr, "Could not find tree object for the revision\n");
-		goto end;
-	}
-	gitfs_info.time = git_commit_time((git_commit *) gitfs_info.revision);
-
-	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(gitfs_info.root_tree)));
+	
+	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree)));
+	
+	// we can dispose of the tree cause we don't need it at the moment and we won't save it
+	git_tree_free(root_tree);
 end:
 	return ret;
 }
 
 void gitfs_dispose(struct gitfs_object * object)
 {
-	if (object->tree && object->tree != gitfs_info.root_tree)
-		git_tree_free(object->tree);
 	if (object->blob)
 		git_blob_free(object->blob);
 	if (object->name)
@@ -97,26 +117,36 @@ static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry
 struct gitfs_object * gitfs_get_object(const char *path)
 {
 	int ret = 0;
-	struct gitfs_object * object;
+	struct gitfs_object * object = NULL;
+	git_tree_entry * tree_entry = NULL;
+	git_tree * root_tree = NULL;
+	root_tree = gitfs_get_root_tree();
+	if (!root_tree) {
+		goto end;
+	}
 	if (!(strlen(path) && strcmp(path, "/"))) {
 		// root tree
 		object = calloc(1, sizeof(gitfs_object));
-		object->tree = gitfs_info.root_tree;
 		object->path = strdup("/");
 		object->name = strdup("/");
+		object->tree = root_tree;
 		return object;
 	}
 
-	struct git_tree_entry * tree_entry;
-	ret = git_tree_entry_bypath(&tree_entry, gitfs_info.root_tree, path + (path[0] == '/' ? 1 : 0));
+	
+	ret = git_tree_entry_bypath(&tree_entry, root_tree, path + (path[0] == '/' ? 1 : 0));
 	if (ret) {
 		fprintf(stderr, "Could not find the object for the path %s\n", path);
-		return NULL;
+		tree_entry = NULL;
+		goto end;
 	}
 	
 	object = gitfs_get_object_from_git_tree_entry(tree_entry);
+end:
 	if (object)
 		object->path = strdup(path);
+	if (root_tree)
+		git_tree_free(root_tree);
 	if (tree_entry)
 		git_tree_entry_free(tree_entry);
 	return object;
@@ -197,8 +227,7 @@ const char * gitfs_get_content(struct gitfs_object * object)
 
 void gitfs_shutdown()
 {
-	if (gitfs_info.revision)
-		git_object_free(gitfs_info.revision);
+	git_repository_free(gitfs_info.repo);
 	// going out, for the time being
 	git_libgit2_shutdown();
 }

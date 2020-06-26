@@ -11,8 +11,6 @@
 struct gitfs_info {
 	const char * treeish; // treeish that is asked to track
 	git_repository * repo;
-	git_object * revision; // revision that is being tracked // TODO will change
-	git_tree * root_tree;
 	int gid; // provided by fuse
 	int uid; // provided by fuse
 	time_t time; // time associated to the revision
