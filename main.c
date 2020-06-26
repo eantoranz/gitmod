@@ -38,6 +38,8 @@ static void *gitfs_fs_init(struct fuse_conn_info *conn,
         (void) conn;
 	printf("Running gitfs_init(...)\n");
         cfg->kernel_cache = 1; // TODO consider what will need to be done when we track a moving branch
+        gitfs_info.uid = cfg->set_uid;
+	gitfs_info.gid = cfg->set_gid;
         return NULL;
 }
 
@@ -60,8 +62,8 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_atime = gitfs_info.time;
 	stbuf->st_ctime = gitfs_info.time;
 	stbuf->st_mtime = gitfs_info.time;
-	stbuf->st_uid = getuid();
-	stbuf->st_gid = getgid();
+	stbuf->st_uid = gitfs_info.uid;
+	stbuf->st_gid = gitfs_info.gid;
 	stbuf->st_nlink = gitfs_get_num_entries(object);
 	enum gitfs_object_type object_type = gitfs_get_type(object);
         if (object_type == GITFS_TREE) { // this will depend on the type of object
