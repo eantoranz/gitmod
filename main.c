@@ -52,6 +52,7 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 
 	struct gitfs_object * object = gitfs_get_object(path);
 	if (!object) {
+		fprintf(stderr, "gitfs_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
 	}
 
@@ -87,19 +88,18 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	printf("Running gitfs_readdir(\"%s\", ...)\n", path);
 
-        if (strcmp(path, "/") != 0) // TODO only working on root node for the time being
+	struct gitfs_object * dir_node = gitfs_get_object(path);
+        if (!dir_node || gitfs_get_object_type(dir_node) != GITFS_TREE) {
+		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
                 return -ENOENT;
+	}
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	struct gitfs_object * root_node = gitfs_get_object(path);
-	if (!root_node)
-		// did not find the node
-		return -ENOENT;
-	int num_items = gitfs_get_num_entries(root_node);
+	int num_items = gitfs_get_num_entries(dir_node);
 	struct gitfs_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitfs_get_tree_entry(root_node, i);
+		entry = gitfs_get_tree_entry(dir_node, i);
 		if (entry) {
 			char * name = gitfs_get_name(entry);
 			if (name)
@@ -107,7 +107,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			gitfs_dispose(entry);
 		}
 	}
-	gitfs_dispose(root_node);
+	gitfs_dispose(dir_node);
 
         return 0;
 }
