@@ -50,8 +50,8 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 
 	printf("Running gitfs_getattr(\"%s\", ...)\n", path);
 
-	struct gitfs_object * object;
-	if (gitfs_get_object(&object, path)) {
+	struct gitfs_object * object = gitfs_get_object(path);
+	if (!object) {
 		return -ENOENT;
 	}
 
@@ -92,16 +92,15 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	struct gitfs_object * root_node;
-	if (gitfs_get_object(&root_node, path)) {
+	struct gitfs_object * root_node = gitfs_get_object(path);
+	if (!root_node)
 		// did not find the node
 		return -ENOENT;
-	}
 	int num_items = gitfs_get_num_entries(root_node);
 	struct gitfs_object * entry;
 	for (int i=0; i < num_items; i++) {
-		int ret = gitfs_get_tree_entry(&entry, root_node, i);
-		if (!ret) {
+		entry = gitfs_get_tree_entry(root_node, i);
+		if (entry) {
 			char * name = gitfs_get_name(entry);
 			if (name)
 				filler(buf, name, NULL, 0, 0);
