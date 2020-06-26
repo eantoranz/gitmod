@@ -22,7 +22,7 @@ void testGetRootTree()
 	struct gitfs_object * root_tree = gitfs_get_object("/");
 	CU_ASSERT(root_tree != NULL);
 	if (root_tree) {
-		CU_ASSERT(gitfs_get_object_type(root_tree) == GITFS_TREE);
+		CU_ASSERT(gitfs_get_type(root_tree) == GITFS_TREE);
 		int num_items = gitfs_get_num_entries(root_tree);
 		CU_ASSERT(num_items == 5);
 
@@ -34,44 +34,52 @@ void testGetRootTree()
 			if (entry) {
 				char * name = gitfs_get_name(entry);
 				int expected_items;
+				int expected_size;
 				enum gitfs_object_type expected_type;
 				switch (i) {
 					case 0:
 						name = ".gitignore";
 						expected_items = 1;
 						expected_type = GITFS_BLOB;
+						expected_size = 17;
 						break;
 					case 1:
 						name = "build.sh";
 						expected_items = 1;
 						expected_type = GITFS_BLOB;
+						expected_size = 274;
 						break;
 					case 2:
 						name = "gitfs.c";
 						expected_items = 1;
 						expected_type = GITFS_BLOB;
+						expected_size = 4672;
 						break;
 					case 3:
 						name = "include";
 						expected_items = 2;
 						expected_type = GITFS_TREE;
+						expected_size = 2;
 						break;
 					case 4:
 						name = "tests";
 						expected_items = 1;
 						expected_type = GITFS_TREE;
+						expected_size = 1;
 						break;
 					default:
 						name = "***unknown item.... need to add more values***";
 						expected_type = GITFS_UNKNOWN;
 						expected_items = -ENOENT;
+						expected_size = -765;
 				}
 				int res = strcmp(name, gitfs_get_name(entry));
 				CU_ASSERT(!res);
 				if (res)
 					fprintf(stderr, "Item %d: Was expecting item to be named %s but got %s\n", i, name, gitfs_get_name(entry));
 				CU_ASSERT(gitfs_get_num_entries(entry) == expected_items);
-				CU_ASSERT(gitfs_get_object_type(entry) == expected_type);
+				CU_ASSERT(gitfs_get_type(entry) == expected_type);
+				CU_ASSERT(gitfs_get_size(entry) == expected_size);
 				gitfs_dispose(entry);
 			}
 		}
@@ -87,7 +95,7 @@ void testGetObjectByPathBlob()
 	struct gitfs_object * object = gitfs_get_object("/tests/test.c");
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitfs_get_object_type(object) == GITFS_BLOB);
+		CU_ASSERT(gitfs_get_type(object) == GITFS_BLOB);
 		CU_ASSERT(gitfs_get_num_entries(object) == 1);
 		gitfs_dispose(object);
 	}
@@ -98,7 +106,7 @@ void testGetObjectByPathTree()
 	struct gitfs_object * object = gitfs_get_object("tests");
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitfs_get_object_type(object) == GITFS_TREE);
+		CU_ASSERT(gitfs_get_type(object) == GITFS_TREE);
 		int tree_entries = gitfs_get_num_entries(object);
 		CU_ASSERT(tree_entries == 1);
 		gitfs_dispose(object);

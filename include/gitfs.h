@@ -36,9 +36,15 @@ int gitfs_init(const char * repo_path, const char * treeish);
  */
 struct gitfs_object * gitfs_get_object(const char * path);
 
-enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object);
+enum gitfs_object_type gitfs_get_type(struct gitfs_object * object);
 
 int gitfs_get_num_entries(struct gitfs_object * object);
+
+/**
+ * Return the size of the object. If it is a tree,
+ * will return the number of items.
+ */
+int gitfs_get_size(struct gitfs_object * object);
 
 struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index);
 

@@ -63,13 +63,13 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_uid = getuid();
 	stbuf->st_gid = getgid();
 	stbuf->st_nlink = gitfs_get_num_entries(object);
-	enum gitfs_object_type object_type = gitfs_get_object_type(object);
+	enum gitfs_object_type object_type = gitfs_get_type(object);
         if (object_type == GITFS_TREE) { // this will depend on the type of object
                 stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink+=2;
 	} else if (object_type == GITFS_BLOB){
 		stbuf->st_mode = S_IFREG | 0644; // TODO figure out the type of object that it is
-		// TODO what is the size?
+		stbuf->st_size = gitfs_get_size(object);
 	} else {
 		res = -ENOENT;
 	}
@@ -89,7 +89,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	printf("Running gitfs_readdir(\"%s\", ...)\n", path);
 
 	struct gitfs_object * dir_node = gitfs_get_object(path);
-        if (!dir_node || gitfs_get_object_type(dir_node) != GITFS_TREE) {
+        if (!dir_node || gitfs_get_type(dir_node) != GITFS_TREE) {
 		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
                 return -ENOENT;
 	}

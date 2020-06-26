@@ -122,7 +122,7 @@ struct gitfs_object * gitfs_get_object(const char *path)
 	return object;
 }
 
-enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object) {
+enum gitfs_object_type gitfs_get_type(struct gitfs_object * object) {
 	if (object->tree) {
 		return GITFS_TREE;
 	}
@@ -134,7 +134,7 @@ enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object) {
 
 int gitfs_get_num_entries(struct gitfs_object * object)
 {
-	enum gitfs_object_type type = gitfs_get_object_type(object);
+	enum gitfs_object_type type = gitfs_get_type(object);
 	int res;
 	switch (type) {
 	case GITFS_BLOB:
@@ -146,6 +146,20 @@ int gitfs_get_num_entries(struct gitfs_object * object)
 	default:
 		res = -ENOENT;
 	}
+	return res;
+}
+
+int gitfs_get_size(struct gitfs_object * object)
+{
+	int res;
+	
+	if (object->blob)
+		res = git_blob_rawsize(object->blob);
+	else if (object->tree)
+		res = gitfs_get_num_entries(object);
+	else
+		res = -ENOENT;
+	
 	return res;
 }
 
