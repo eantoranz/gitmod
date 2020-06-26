@@ -12,9 +12,9 @@
 
 struct gitfs_object {
 	git_tree * tree;
-	git_tree_entry * tree_entry;
-	int git_tree_entry_dispose; // do not dispose manually
+	git_blob * blob;
 	char * name; // local name, _not_ fullpath
+	char * path; // full path
 } gitfs_object;
 
 int gitfs_init(const char * repo_path, const char * treeish)
@@ -57,15 +57,42 @@ void gitfs_dispose(struct gitfs_object * object)
 {
 	if (object->tree && object->tree != gitfs_info.root_tree)
 		git_tree_free(object->tree);
-	if (object->tree_entry && object->git_tree_entry_dispose)
-		git_tree_entry_free(object->tree_entry);
+	if (object->blob)
+		git_blob_free(object->blob);
 	if (object->name)
 		free(object->name);
+	if (object->path)
+		free(object->path);
 
 	// finally
 	free(object);
 }
 
+static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * gitfs_entry)
+{
+	struct gitfs_object * object = calloc(1, sizeof(gitfs_object));
+	if (!object) {
+		return NULL;
+	}
+	object->name = strdup(git_tree_entry_name(gitfs_entry));
+	git_otype otype = git_tree_entry_type(gitfs_entry);
+	int ret;
+	switch (otype) {
+	case GIT_OBJ_BLOB:
+		ret = git_tree_entry_to_object((git_object **) &object->blob, gitfs_info.repo, gitfs_entry);
+		break;
+	case GIT_OBJ_TREE:
+		ret = git_tree_entry_to_object((git_object **) &object->tree, gitfs_info.repo, gitfs_entry);
+		break;
+	default:
+		ret = -ENOENT;
+	}
+	if (ret && object) {
+		gitfs_dispose(object);
+		object = NULL;
+	}
+	return object;
+}
 
 int gitfs_get_object(struct gitfs_object ** object, const char *path)
 {
@@ -74,19 +101,24 @@ int gitfs_get_object(struct gitfs_object ** object, const char *path)
 		// root tree
 		object[0] = calloc(1, sizeof(gitfs_object));
 		object[0]->tree = gitfs_info.root_tree;
+		object[0]->path = strdup("/");
+		object[0]->name = strdup("/");
 		return 0;
 	}
 
-	struct gitfs_object gitfs_object;
-	ret = git_tree_entry_bypath(&gitfs_object.tree_entry, gitfs_info.root_tree, path + (path[0] == '/' ? 1 : 0));
+	struct git_tree_entry * tree_entry;
+	ret = git_tree_entry_bypath(&tree_entry, gitfs_info.root_tree, path + (path[0] == '/' ? 1 : 0));
 	if (ret) {
 		fprintf(stderr, "Could not find the object for the path %s\n", path);
-		goto end;
+		return -ENOENT;
 	}
-	object[0] = calloc(1, sizeof(gitfs_object));
-	object[0]->tree_entry = gitfs_object.tree_entry;
-	object[0]->git_tree_entry_dispose = 1; // has to be manually disposed of because we used git_tree_entry_bypath
-end:
+	
+	object[0] = gitfs_get_object_from_git_tree_entry(tree_entry);
+	if (!object)
+		return -ENOENT;
+	object[0]->path = strdup(path);
+	if (tree_entry)
+		git_tree_entry_free(tree_entry);
 	return ret;
 }
 
@@ -94,13 +126,8 @@ enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object) {
 	if (object->tree) {
 		return GITFS_TREE;
 	}
-	if (object->tree_entry) {
-		git_otype otype = git_tree_entry_type(object->tree_entry);
-		if (otype == GIT_OBJ_BLOB) {
-			return GITFS_BLOB;
-		} else if (otype == GIT_OBJ_TREE) {
-			return GITFS_TREE;
-		}
+	if (object->blob) {
+		return GITFS_BLOB;
 	}
 	return GITFS_UNKNOWN;
 }
@@ -110,48 +137,32 @@ int gitfs_get_num_entries(struct gitfs_object * object)
 	if (gitfs_get_object_type(object) != GITFS_TREE) {
 		return -ENOENT;
 	}
-	if (object->tree_entry) {
-		git_object * entry_object;
-		int res = git_tree_entry_to_object(&entry_object, gitfs_info.repo, object->tree_entry);
-		if (res)
-			return -ENOENT;
-		res = git_tree_entrycount((git_tree *) entry_object);
-		git_tree_free((git_tree *) entry_object);
-		return res;
-	}
 	return git_tree_entrycount(object->tree);
 }
 
 int gitfs_get_tree_entry(struct gitfs_object ** entry, struct gitfs_object * tree, int index)
 {
-	if (!tree->tree) {
+	if (!tree->tree)
 		// not a tree
 		return -ENOENT;
-	}
 	git_tree_entry * git_entry = (git_tree_entry *) git_tree_entry_byindex(tree->tree, index);
 	if (!git_entry) {
 		fprintf(stderr, "No entry in tree for index %d\n", index);
 		return -ENOENT;
 	}
 	// got the entry
-	entry[0] = calloc(1, sizeof(gitfs_object));
-	entry[0]->tree_entry = git_entry;
+	entry[0] = gitfs_get_object_from_git_tree_entry(git_entry);
+	if (!entry[0])
+		// could not create the object
+		return -ENOENT;
+	// TODO get full path
+	
 	return 0;
 }
 
 char * gitfs_get_name(struct gitfs_object * object)
 {
-	char * name = object->name;
-	if (name)
-		// already had it, no need to get it again
-		goto end;
-	if (object->tree_entry) {
-		name = strdup(git_tree_entry_name(object->tree_entry));
-		goto end;
-	}
-end:
-	object->name = name;
-	return name;
+	return object->name;
 }
 
 void gitfs_shutdown()
@@ -161,5 +172,3 @@ void gitfs_shutdown()
 	// going out, for the time being
 	git_libgit2_shutdown();
 }
-
-
