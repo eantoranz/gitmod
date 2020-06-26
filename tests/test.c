@@ -97,6 +97,15 @@ void testGetObjectByPathBlob()
 	if (object) {
 		CU_ASSERT(gitfs_get_type(object) == GITFS_BLOB);
 		CU_ASSERT(gitfs_get_num_entries(object) == 1);
+		long size = gitfs_get_size(object);
+		CU_ASSERT(size == 2078);
+		const char * content = gitfs_get_content(object);
+		CU_ASSERT(content != NULL);
+		if (content) {
+			char * dest = malloc(10);
+			strncpy(dest, content, 9);
+			CU_ASSERT(strcmp(dest, "/*\n * Cop") == 0);
+		}
 		gitfs_dispose(object);
 	}
 }
@@ -109,6 +118,7 @@ void testGetObjectByPathTree()
 		CU_ASSERT(gitfs_get_type(object) == GITFS_TREE);
 		int tree_entries = gitfs_get_num_entries(object);
 		CU_ASSERT(tree_entries == 1);
+		CU_ASSERT(gitfs_get_content(object) == NULL);
 		gitfs_dispose(object);
 	}
 }

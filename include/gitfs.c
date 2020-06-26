@@ -188,6 +188,13 @@ char * gitfs_get_name(struct gitfs_object * object)
 	return object->name;
 }
 
+const char * gitfs_get_content(struct gitfs_object * object)
+{
+	if (!object->blob)
+		return NULL;
+	return git_blob_rawcontent(object->blob);
+}
+
 void gitfs_shutdown()
 {
 	if (gitfs_info.revision)

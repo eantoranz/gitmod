@@ -51,6 +51,11 @@ struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index
 char * gitfs_get_name(struct gitfs_object * object);
 
 /**
+ * do not free the pointer
+ */
+const char * gitfs_get_content(struct gitfs_object * object);
+
+/**
  * Close everything
  */
 void gitfs_shutdown();
