@@ -134,10 +134,19 @@ enum gitfs_object_type gitfs_get_object_type(struct gitfs_object * object) {
 
 int gitfs_get_num_entries(struct gitfs_object * object)
 {
-	if (gitfs_get_object_type(object) != GITFS_TREE) {
-		return -ENOENT;
+	enum gitfs_object_type type = gitfs_get_object_type(object);
+	int res;
+	switch (type) {
+	case GITFS_BLOB:
+		res = 1;
+		break;
+	case GITFS_TREE:
+		res = git_tree_entrycount(object->tree);
+		break;
+	default:
+		res = -ENOENT;
 	}
-	return git_tree_entrycount(object->tree);
+	return res;
 }
 
 struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index)

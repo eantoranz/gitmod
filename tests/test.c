@@ -33,29 +33,45 @@ void testGetRootTree()
 			CU_ASSERT(entry != NULL);
 			if (entry) {
 				char * name = gitfs_get_name(entry);
+				int expected_items;
+				enum gitfs_object_type expected_type;
 				switch (i) {
 					case 0:
 						name = ".gitignore";
+						expected_items = 1;
+						expected_type = GITFS_BLOB;
 						break;
 					case 1:
 						name = "build.sh";
+						expected_items = 1;
+						expected_type = GITFS_BLOB;
 						break;
 					case 2:
 						name = "gitfs.c";
+						expected_items = 1;
+						expected_type = GITFS_BLOB;
 						break;
 					case 3:
 						name = "include";
+						expected_items = 2;
+						expected_type = GITFS_TREE;
 						break;
 					case 4:
 						name = "tests";
+						expected_items = 1;
+						expected_type = GITFS_TREE;
 						break;
 					default:
 						name = "***unknown item.... need to add more values***";
+						expected_type = GITFS_UNKNOWN;
+						expected_items = -ENOENT;
 				}
 				int res = strcmp(name, gitfs_get_name(entry));
 				CU_ASSERT(!res);
 				if (res)
 					fprintf(stderr, "Item %d: Was expecting item to be named %s but got %s\n", i, name, gitfs_get_name(entry));
+				CU_ASSERT(gitfs_get_num_entries(entry) == expected_items);
+				CU_ASSERT(gitfs_get_object_type(entry) == expected_type);
 				gitfs_dispose(entry);
 			}
 		}
@@ -72,6 +88,7 @@ void testGetObjectByPathBlob()
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitfs_get_object_type(object) == GITFS_BLOB);
+		CU_ASSERT(gitfs_get_num_entries(object) == 1);
 		gitfs_dispose(object);
 	}
 }

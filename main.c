@@ -61,13 +61,13 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = gitfs_info.time;
 	stbuf->st_uid = getuid();
 	stbuf->st_gid = getgid();
+	stbuf->st_nlink = gitfs_get_num_entries(object);
 	enum gitfs_object_type object_type = gitfs_get_object_type(object);
         if (object_type == GITFS_TREE) { // this will depend on the type of object
                 stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = gitfs_get_num_entries(object) + 2;
+		stbuf->st_nlink+=2;
 	} else if (object_type == GITFS_BLOB){
 		stbuf->st_mode = S_IFREG | 0644; // TODO figure out the type of object that it is
-		stbuf->st_nlink = 1;
 		// TODO what is the size?
 	} else {
 		res = -ENOENT;
