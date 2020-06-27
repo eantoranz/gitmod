@@ -37,7 +37,7 @@ static void *gitfs_fs_init(struct fuse_conn_info *conn,
 {
         (void) conn;
 	printf("Running gitfs_init(...)\n");
-        cfg->kernel_cache = 1; // TODO consider what will need to be done when we track a moving branch
+	cfg->kernel_cache = 0; // TODO can use cache if working from a revision or tags (cause they are not _supposed_ to move, right?)
         gitfs_info.uid = cfg->set_uid;
 	gitfs_info.gid = cfg->set_gid;
         return NULL;
