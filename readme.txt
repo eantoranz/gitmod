@@ -12,9 +12,6 @@ At the moment it does the very basics:
 - Lists files in the tree on the mount point
 - Get content of files
 
-Ideally, it should be able to _track_ branches but will
-have to work on that cause it's not working at the moment.
-
 Dependencies
 - libgit2
 - cunit1
