@@ -52,7 +52,7 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 
 	printf("Running gitfs_getattr(\"%s\", ...)\n", path);
 
-	struct gitfs_object * object = gitfs_get_object(path);
+	struct gitfs_object * object = gitfs_get_object(path, 1);
 	if (!object) {
 		fprintf(stderr, "gitfs_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
@@ -67,10 +67,10 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_nlink = gitfs_get_num_entries(object);
 	enum gitfs_object_type object_type = gitfs_get_type(object);
         if (object_type == GITFS_TREE) { // this will depend on the type of object
-                stbuf->st_mode = S_IFDIR | 0755;
+                stbuf->st_mode = S_IFDIR | 0555; // mode is always 0 for trees
 		stbuf->st_nlink+=2;
 	} else if (object_type == GITFS_BLOB){
-		stbuf->st_mode = S_IFREG | 0644; // TODO figure out the type of object that it is
+		stbuf->st_mode = S_IFREG | gitfs_get_mode(object);
 		stbuf->st_size = gitfs_get_size(object);
 	} else {
 		res = -ENOENT;
@@ -90,7 +90,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	printf("Running gitfs_readdir(\"%s\", ...)\n", path);
 
-	struct gitfs_object * dir_node = gitfs_get_object(path);
+	struct gitfs_object * dir_node = gitfs_get_object(path, 0);
         if (!dir_node || gitfs_get_type(dir_node) != GITFS_TREE) {
 		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
@@ -103,7 +103,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	int num_items = gitfs_get_num_entries(dir_node);
 	struct gitfs_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitfs_get_tree_entry(dir_node, i);
+		entry = gitfs_get_tree_entry(dir_node, i, 0);
 		if (entry) {
 			char * name = gitfs_get_name(entry);
 			if (name)
@@ -121,7 +121,7 @@ static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
 {
         size_t len;
         (void) fi;
-	struct gitfs_object * object = gitfs_get_object(path);
+	struct gitfs_object * object = gitfs_get_object(path, 0);
 	if (!object || gitfs_get_type(object) != GITFS_BLOB) {
 		fprintf(stderr, "gitfs_read: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)

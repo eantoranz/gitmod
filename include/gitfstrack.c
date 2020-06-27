@@ -9,12 +9,14 @@
 #include <stddef.h>
 #include <errno.h>
 #include <git2.h>
+#include <unistd.h>
 
 struct gitfs_object {
 	git_tree * tree;
 	git_blob * blob;
 	char * name; // local name, _not_ fullpath
 	char * path; // full path
+	int mode;
 } gitfs_object;
 
 /**
@@ -88,33 +90,40 @@ void gitfs_dispose(struct gitfs_object * object)
 	free(object);
 }
 
-static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * gitfs_entry)
+static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
 {
 	struct gitfs_object * object = calloc(1, sizeof(gitfs_object));
 	if (!object) {
 		return NULL;
 	}
-	object->name = strdup(git_tree_entry_name(gitfs_entry));
-	git_otype otype = git_tree_entry_type(gitfs_entry);
+	if (pull_mode)
+		object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
+	object->name = strdup(git_tree_entry_name(git_entry));
+	git_otype otype = git_tree_entry_type(git_entry);
 	int ret;
 	switch (otype) {
 	case GIT_OBJ_BLOB:
-		ret = git_tree_entry_to_object((git_object **) &object->blob, gitfs_info.repo, gitfs_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->blob, gitfs_info.repo, git_entry);
 		break;
 	case GIT_OBJ_TREE:
-		ret = git_tree_entry_to_object((git_object **) &object->tree, gitfs_info.repo, gitfs_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->tree, gitfs_info.repo, git_entry);
 		break;
 	default:
 		ret = -ENOENT;
 	}
-	if (ret && object) {
+	if (ret) {
 		gitfs_dispose(object);
 		object = NULL;
 	}
 	return object;
 }
 
-struct gitfs_object * gitfs_get_object(const char *path)
+int gitfs_get_mode(struct gitfs_object * object)
+{
+	return object->mode;
+}
+
+struct gitfs_object * gitfs_get_object(const char *path, int pull_mode)
 {
 	int ret = 0;
 	struct gitfs_object * object = NULL;
@@ -130,6 +139,8 @@ struct gitfs_object * gitfs_get_object(const char *path)
 		object->path = strdup("/");
 		object->name = strdup("/");
 		object->tree = root_tree;
+		if (pull_mode)
+			object->mode = 0555; // TODO can we get more info about what the perms are for the mount point?
 		return object;
 	}
 
@@ -141,7 +152,7 @@ struct gitfs_object * gitfs_get_object(const char *path)
 		goto end;
 	}
 	
-	object = gitfs_get_object_from_git_tree_entry(tree_entry);
+	object = gitfs_get_object_from_git_tree_entry(tree_entry, pull_mode);
 end:
 	if (object)
 		object->path = strdup(path);
@@ -193,7 +204,7 @@ int gitfs_get_size(struct gitfs_object * object)
 	return res;
 }
 
-struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index)
+struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index, int pull_mode)
 {
 	if (!tree->tree)
 		// not a tree
@@ -204,7 +215,7 @@ struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index
 		return NULL;
 	}
 	// got the entry
-	struct gitfs_object * entry = gitfs_get_object_from_git_tree_entry(git_entry);
+	struct gitfs_object * entry = gitfs_get_object_from_git_tree_entry(git_entry, pull_mode);
 	if (!entry)
 		// could not create the object
 		return NULL;

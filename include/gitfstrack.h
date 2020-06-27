@@ -34,7 +34,9 @@ int gitfs_init(const char * repo_path, const char * treeish);
 /**
  * Get the object associated with this path
  */
-struct gitfs_object * gitfs_get_object(const char * path);
+struct gitfs_object * gitfs_get_object(const char * path, int pull_mode);
+
+int gitfs_get_mode(struct gitfs_object * object);
 
 enum gitfs_object_type gitfs_get_type(struct gitfs_object * object);
 
@@ -46,7 +48,7 @@ int gitfs_get_num_entries(struct gitfs_object * object);
  */
 int gitfs_get_size(struct gitfs_object * object);
 
-struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index);
+struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index, int pull_mode);
 
 char * gitfs_get_name(struct gitfs_object * object);
 
