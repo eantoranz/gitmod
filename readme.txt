@@ -20,7 +20,19 @@ Dependencies
 - cunit1
 - fuse3
 
-This is very alpha software at the moment so:
-***DO NOT USE IT IN PRODUCTION***
+How to compile it:
+./build.sh
 
+That will generate a binary called gitfstrack
+
+Usage:
+- It supports the standard options provided by fuse. It also has 2 more options:
+
+--treeish: use to specify which treeish to track (branch/tag/revision). Default is HEAD
+--repo: use to specify which repo to expose contents from. Default: ./
+
+
+This is very alpha software at the moment so:
+*** DO NOT USE IT IN PRODUCTION ***
+*** USE AT YOUR OWN RISK ***
 
