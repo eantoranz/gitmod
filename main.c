@@ -5,7 +5,7 @@
 
 #define FUSE_USE_VERSION 31
 
-#include "include/gitfstrack.h"
+#include "gitfstrack.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>

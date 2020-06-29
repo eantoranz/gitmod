@@ -18,7 +18,7 @@ Dependencies
 - fuse3
 
 How to compile it:
-./build.sh
+Run: make
 
 That will generate a binary called gitfstrack
 
