@@ -116,12 +116,23 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         return 0;
 }
 
+static int gitfs_open(const char * path, struct fuse_file_info *fi)
+{
+	int ret = 0;
+	struct gitfs_object * object = gitfs_get_object(path, 0);
+	if (object)
+		fi->fh = (uint64_t) object;
+	else
+		ret = -ENOENT;
+	return ret;
+}
+
 static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
         size_t len;
         (void) fi;
-	struct gitfs_object * object = gitfs_get_object(path, 0);
+	struct gitfs_object * object = (struct gitfs_object *) fi->fh;
 	if (!object || gitfs_get_type(object) != GITFS_BLOB) {
 		fprintf(stderr, "gitfs_read: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
@@ -138,8 +149,13 @@ static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
         } else
                 size = 0;
 	
-	gitfs_dispose(object);
         return size;
+}
+
+static int gitfs_release(const char * path, struct fuse_file_info *fi)
+{
+	gitfs_dispose((struct gitfs_object *) fi->fh);
+	return 0;
 }
 
 static void gitfs_destroy()
@@ -153,7 +169,9 @@ static const struct fuse_operations gitfs_oper = {
         .init           = gitfs_fs_init,
 	.getattr        = gitfs_getattr,
 	.readdir        = gitfs_readdir,
+	.open           = gitfs_open,
 	.read           = gitfs_read,
+	.release        = gitfs_release,
 	.destroy        = gitfs_destroy,
 };
 
