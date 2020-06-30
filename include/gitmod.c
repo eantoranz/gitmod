@@ -3,7 +3,7 @@
  * Released under the terms of GPLv2
  */
 
-#include "gitfstrack.h"
+#include "gitmod.h"
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -14,17 +14,17 @@
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
-static git_tree * gitfs_get_root_tree() {
+static git_tree * gitmod_get_root_tree() {
 	int ret;
 	git_object * revision;
-	ret = git_revparse_single(&revision, gitfs_info.repo, gitfs_info.treeish);
+	ret = git_revparse_single(&revision, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
-		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", gitfs_info.treeish);
+		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", gitmod_info.treeish);
 		return NULL;
 	}
 
 	// TODO how can I make sure the object is a git_commit?
-	printf("Successfully parsed treeish %s\n", gitfs_info.treeish);
+	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
 	git_tree * root_tree;
 	ret =  git_commit_tree(&root_tree, (git_commit *) revision);
 	if (ret) {
@@ -32,30 +32,30 @@ static git_tree * gitfs_get_root_tree() {
 		root_tree = NULL;
 		goto end;
 	}
-	gitfs_info.time = git_commit_time((git_commit *) revision);
+	gitmod_info.time = git_commit_time((git_commit *) revision);
 end:
 	git_object_free(revision);
 	
 	return root_tree;
 }
 
-int gitfs_init(const char * repo_path, const char * treeish)
+int gitmod_init(const char * repo_path, const char * treeish)
 {
 	int ret;
 
 	// save the treeish
-	gitfs_info.treeish = treeish;
+	gitmod_info.treeish = treeish;
 
 	git_libgit2_init();
-	ret = git_repository_open(&gitfs_info.repo, repo_path);
+	ret = git_repository_open(&gitmod_info.repo, repo_path);
 	if (ret) {
 		// there was an error opening the repository
 		fprintf(stderr, "There was an error opening the git repo at %s\n", repo_path);
 		goto end;
 	}
 
-	printf("Successfully opened repo at %s\n", git_repository_commondir(gitfs_info.repo));
-	git_tree * root_tree = gitfs_get_root_tree();
+	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
+	git_tree * root_tree = gitmod_get_root_tree();
 	if (!root_tree) {
 		fprintf(stderr, "Could not open root tree for treeish");
 		return -ENOENT;
@@ -69,7 +69,7 @@ end:
 	return ret;
 }
 
-void gitfs_dispose(gitfs_object * object)
+void gitmod_dispose(gitmod_object * object)
 {
 	if (object->blob)
 		git_blob_free(object->blob);
@@ -82,9 +82,9 @@ void gitfs_dispose(gitfs_object * object)
 	free(object);
 }
 
-static gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
+static gitmod_object * gitmod_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
 {
-	gitfs_object * object = calloc(1, sizeof(gitfs_object));
+	gitmod_object * object = calloc(1, sizeof(gitmod_object));
 	if (!object) {
 		return NULL;
 	}
@@ -95,39 +95,39 @@ static gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * git_
 	int ret;
 	switch (otype) {
 	case GIT_OBJ_BLOB:
-		ret = git_tree_entry_to_object((git_object **) &object->blob, gitfs_info.repo, git_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->blob, gitmod_info.repo, git_entry);
 		break;
 	case GIT_OBJ_TREE:
-		ret = git_tree_entry_to_object((git_object **) &object->tree, gitfs_info.repo, git_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->tree, gitmod_info.repo, git_entry);
 		break;
 	default:
 		ret = -ENOENT;
 	}
 	if (ret) {
-		gitfs_dispose(object);
+		gitmod_dispose(object);
 		object = NULL;
 	}
 	return object;
 }
 
-int gitfs_get_mode(gitfs_object * object)
+int gitmod_get_mode(gitmod_object * object)
 {
 	return object->mode;
 }
 
-gitfs_object * gitfs_get_object(const char *path, int pull_mode)
+gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 {
 	int ret = 0;
-	gitfs_object * object = NULL;
+	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
 	git_tree * root_tree = NULL;
-	root_tree = gitfs_get_root_tree();
+	root_tree = gitmod_get_root_tree();
 	if (!root_tree) {
 		goto end;
 	}
 	if (!(strlen(path) && strcmp(path, "/"))) {
 		// root tree
-		object = calloc(1, sizeof(gitfs_object));
+		object = calloc(1, sizeof(gitmod_object));
 		object->path = strdup("/");
 		object->name = strdup("/");
 		object->tree = root_tree;
@@ -144,7 +144,7 @@ gitfs_object * gitfs_get_object(const char *path, int pull_mode)
 		goto end;
 	}
 	
-	object = gitfs_get_object_from_git_tree_entry(tree_entry, pull_mode);
+	object = gitmod_get_object_from_git_tree_entry(tree_entry, pull_mode);
 end:
 	if (object)
 		object->path = strdup(path);
@@ -155,7 +155,7 @@ end:
 	return object;
 }
 
-enum gitfs_object_type gitfs_get_type(gitfs_object * object) {
+enum gitmod_object_type gitmod_get_type(gitmod_object * object) {
 	if (object->tree) {
 		return GITFS_TREE;
 	}
@@ -165,9 +165,9 @@ enum gitfs_object_type gitfs_get_type(gitfs_object * object) {
 	return GITFS_UNKNOWN;
 }
 
-int gitfs_get_num_entries(gitfs_object * object)
+int gitmod_get_num_entries(gitmod_object * object)
 {
-	enum gitfs_object_type type = gitfs_get_type(object);
+	enum gitmod_object_type type = gitmod_get_type(object);
 	int res;
 	switch (type) {
 	case GITFS_BLOB:
@@ -182,21 +182,21 @@ int gitfs_get_num_entries(gitfs_object * object)
 	return res;
 }
 
-int gitfs_get_size(gitfs_object * object)
+int gitmod_get_size(gitmod_object * object)
 {
 	int res;
 	
 	if (object->blob)
 		res = git_blob_rawsize(object->blob);
 	else if (object->tree)
-		res = gitfs_get_num_entries(object);
+		res = gitmod_get_num_entries(object);
 	else
 		res = -ENOENT;
 	
 	return res;
 }
 
-gitfs_object * gitfs_get_tree_entry(gitfs_object * tree, int index, int pull_mode)
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode)
 {
 	if (!tree->tree)
 		// not a tree
@@ -207,7 +207,7 @@ gitfs_object * gitfs_get_tree_entry(gitfs_object * tree, int index, int pull_mod
 		return NULL;
 	}
 	// got the entry
-	gitfs_object * entry = gitfs_get_object_from_git_tree_entry(git_entry, pull_mode);
+	gitmod_object * entry = gitmod_get_object_from_git_tree_entry(git_entry, pull_mode);
 	if (!entry)
 		// could not create the object
 		return NULL;
@@ -216,21 +216,21 @@ gitfs_object * gitfs_get_tree_entry(gitfs_object * tree, int index, int pull_mod
 	return entry;
 }
 
-char * gitfs_get_name(gitfs_object * object)
+char * gitmod_get_name(gitmod_object * object)
 {
 	return object->name;
 }
 
-const char * gitfs_get_content(gitfs_object * object)
+const char * gitmod_get_content(gitmod_object * object)
 {
 	if (!object->blob)
 		return NULL;
 	return git_blob_rawcontent(object->blob);
 }
 
-void gitfs_shutdown()
+void gitmod_shutdown()
 {
-	git_repository_free(gitfs_info.repo);
+	git_repository_free(gitmod_info.repo);
 	// going out, for the time being
 	git_libgit2_shutdown();
 }

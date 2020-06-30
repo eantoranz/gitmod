@@ -20,7 +20,7 @@ Dependencies
 How to compile it:
 Run: make
 
-That will generate a binary called gitfstrack
+That will generate a binary called gitmod
 
 Usage:
 - It supports the standard options provided by fuse. It also has 2 more options:

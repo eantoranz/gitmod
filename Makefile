@@ -5,16 +5,16 @@ CC=gcc
 CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 --cflags --libs`
 CFLAGSTEST=-lcunit
 
-default: gitfstrack test
+default: gitmod test
 
-gitfstrack.o:
-	$(CC) -c -o gitfstrack.o include/gitfstrack.c $(CFLAGS)
+gitmod.o:
+	$(CC) -c -o gitmod.o include/gitmod.c $(CFLAGS)
 
-gitfstrack: gitfstrack.o
-	$(CC) main.c gitfstrack.o -o gitfstrack $(CFLAGS) 
+gitmod: gitmod.o
+	$(CC) main.c gitmod.o -o gitmod $(CFLAGS) 
 
-test: gitfstrack.o
-	$(CC) tests/test.c gitfstrack.o -o test $(CFLAGS) $(CFLAGSTEST)
+test: gitmod.o
+	$(CC) tests/test.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
 
 clean:
-	rm test gitfstrack gitfstrack.o
+	rm test gitmod gitmod.o

@@ -5,7 +5,7 @@
 
 #define FUSE_USE_VERSION 31
 
-#include "gitfstrack.h"
+#include "gitmod.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,55 +32,55 @@ static const struct fuse_opt option_spec[] = {
 	FUSE_OPT_END
 };
 
-static void *gitfs_fs_init(struct fuse_conn_info *conn,
+static void *gitmod_fs_init(struct fuse_conn_info *conn,
                         struct fuse_config *cfg)
 {
         (void) conn;
-	printf("Running gitfs_init(...)\n");
+	printf("Running gitmod_init(...)\n");
 	cfg->kernel_cache = 0; // TODO can use cache if working from a revision or tags (cause they are not _supposed_ to move, right?)
-        gitfs_info.uid = cfg->set_uid;
-	gitfs_info.gid = cfg->set_gid;
+        gitmod_info.uid = cfg->set_uid;
+	gitmod_info.gid = cfg->set_gid;
         return NULL;
 }
 
-static int gitfs_getattr(const char *path, struct stat *stbuf,
+static int gitmod_getattr(const char *path, struct stat *stbuf,
                          struct fuse_file_info *fi)
 {
         (void) fi;
         int res = 0;
 
 
-	printf("Running gitfs_getattr(\"%s\", ...)\n", path);
+	printf("Running gitmod_getattr(\"%s\", ...)\n", path);
 
-	gitfs_object * object = gitfs_get_object(path, 1);
+	gitmod_object * object = gitmod_get_object(path, 1);
 	if (!object) {
-		fprintf(stderr, "gitfs_getattr: Could not find an object for path %s\n", path);
+		fprintf(stderr, "gitmod_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
 	}
 
         memset(stbuf, 0, sizeof(struct stat));
-	stbuf->st_atime = gitfs_info.time;
-	stbuf->st_ctime = gitfs_info.time;
-	stbuf->st_mtime = gitfs_info.time;
-	stbuf->st_uid = gitfs_info.uid;
-	stbuf->st_gid = gitfs_info.gid;
-	stbuf->st_nlink = gitfs_get_num_entries(object);
-	enum gitfs_object_type object_type = gitfs_get_type(object);
+	stbuf->st_atime = gitmod_info.time;
+	stbuf->st_ctime = gitmod_info.time;
+	stbuf->st_mtime = gitmod_info.time;
+	stbuf->st_uid = gitmod_info.uid;
+	stbuf->st_gid = gitmod_info.gid;
+	stbuf->st_nlink = gitmod_get_num_entries(object);
+	enum gitmod_object_type object_type = gitmod_get_type(object);
         if (object_type == GITFS_TREE) { // this will depend on the type of object
                 stbuf->st_mode = S_IFDIR | 0555; // mode is always 0 for trees
 		stbuf->st_nlink+=2;
 	} else if (object_type == GITFS_BLOB){
-		stbuf->st_mode = S_IFREG | gitfs_get_mode(object);
-		stbuf->st_size = gitfs_get_size(object);
+		stbuf->st_mode = S_IFREG | gitmod_get_mode(object);
+		stbuf->st_size = gitmod_get_size(object);
 	} else {
 		res = -ENOENT;
 	}
-	gitfs_dispose(object);
+	gitmod_dispose(object);
 
         return res;
 }
 
-static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int gitmod_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi,
                          enum fuse_readdir_flags flags)
 {
@@ -88,38 +88,38 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         (void) fi;
         (void) flags;
 
-	printf("Running gitfs_readdir(\"%s\", ...)\n", path);
+	printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
-	gitfs_object * dir_node = gitfs_get_object(path, 0);
-        if (!dir_node || gitfs_get_type(dir_node) != GITFS_TREE) {
-		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
+	gitmod_object * dir_node = gitmod_get_object(path, 0);
+        if (!dir_node || gitmod_get_type(dir_node) != GITFS_TREE) {
+		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
-			gitfs_dispose(dir_node);
+			gitmod_dispose(dir_node);
                 return -ENOENT;
 	}
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	int num_items = gitfs_get_num_entries(dir_node);
-	gitfs_object * entry;
+	int num_items = gitmod_get_num_entries(dir_node);
+	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitfs_get_tree_entry(dir_node, i, 0);
+		entry = gitmod_get_tree_entry(dir_node, i, 0);
 		if (entry) {
-			char * name = gitfs_get_name(entry);
+			char * name = gitmod_get_name(entry);
 			if (name)
 				filler(buf, name, NULL, 0, 0);
-			gitfs_dispose(entry);
+			gitmod_dispose(entry);
 		}
 	}
-	gitfs_dispose(dir_node);
+	gitmod_dispose(dir_node);
 
         return 0;
 }
 
-static int gitfs_open(const char * path, struct fuse_file_info *fi)
+static int gitmod_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
-	gitfs_object * object = gitfs_get_object(path, 0);
+	gitmod_object * object = gitmod_get_object(path, 0);
 	if (object)
 		fi->fh = (uint64_t) object;
 	else
@@ -127,21 +127,21 @@ static int gitfs_open(const char * path, struct fuse_file_info *fi)
 	return ret;
 }
 
-static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
+static int gitmod_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
         size_t len;
         (void) fi;
-	gitfs_object * object = (gitfs_object *) fi->fh;
-	if (!object || gitfs_get_type(object) != GITFS_BLOB) {
-		fprintf(stderr, "gitfs_read: Could not find an object for path %s (or it's not a blob)\n", path);
+	gitmod_object * object = (gitmod_object *) fi->fh;
+	if (!object || gitmod_get_type(object) != GITFS_BLOB) {
+		fprintf(stderr, "gitmod_read: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
-			gitfs_dispose(object);
+			gitmod_dispose(object);
 		return -ENOENT;
 	}
 	
-	len = gitfs_get_size(object);
-	const char * contents = gitfs_get_content(object);
+	len = gitmod_get_size(object);
+	const char * contents = gitmod_get_content(object);
         if (offset < len) {
                 if (offset + size > len)
                         size = len - offset;
@@ -152,27 +152,27 @@ static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
         return size;
 }
 
-static int gitfs_release(const char * path, struct fuse_file_info *fi)
+static int gitmod_release(const char * path, struct fuse_file_info *fi)
 {
-	gitfs_dispose((gitfs_object *) fi->fh);
+	gitmod_dispose((gitmod_object *) fi->fh);
 	return 0;
 }
 
-static void gitfs_destroy()
+static void gitmod_destroy()
 {
-	printf("Running gitfs_destroy()\n");
-	gitfs_shutdown();
+	printf("Running gitmod_destroy()\n");
+	gitmod_shutdown();
 
 }
 
-static const struct fuse_operations gitfs_oper = {
-        .init           = gitfs_fs_init,
-	.getattr        = gitfs_getattr,
-	.readdir        = gitfs_readdir,
-	.open           = gitfs_open,
-	.read           = gitfs_read,
-	.release        = gitfs_release,
-	.destroy        = gitfs_destroy,
+static const struct fuse_operations gitmod_oper = {
+        .init           = gitmod_fs_init,
+	.getattr        = gitmod_getattr,
+	.readdir        = gitmod_readdir,
+	.open           = gitmod_open,
+	.read           = gitmod_read,
+	.release        = gitmod_release,
+	.destroy        = gitmod_destroy,
 };
 
 
@@ -214,12 +214,12 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         }
 
-	ret = gitfs_init(options.repo_path, options.treeish);
+	ret = gitmod_init(options.repo_path, options.treeish);
 
 	if (ret)
-		gitfs_shutdown();
+		gitmod_shutdown();
 	else
-		fuse_main(args.argc, args.argv, &gitfs_oper, NULL);
+		fuse_main(args.argc, args.argv, &gitmod_oper, NULL);
 
 	return ret;
 }
