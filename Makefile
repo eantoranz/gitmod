@@ -8,10 +8,10 @@ CFLAGSTEST=-lcunit
 default: gitmod test
 
 gitmod.o:
-	$(CC) -c -o gitmod.o include/gitmod.c $(CFLAGS)
+	$(CC) -c -o gitmod.o src/gitmod.c $(CFLAGS)
 
 gitmod: gitmod.o
-	$(CC) main.c gitmod.o -o gitmod $(CFLAGS) 
+	$(CC) src/main.c gitmod.o -o gitmod $(CFLAGS) 
 
 test: gitmod.o
 	$(CC) tests/test.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
