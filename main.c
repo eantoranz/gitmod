@@ -52,7 +52,7 @@ static int gitfs_getattr(const char *path, struct stat *stbuf,
 
 	printf("Running gitfs_getattr(\"%s\", ...)\n", path);
 
-	struct gitfs_object * object = gitfs_get_object(path, 1);
+	gitfs_object * object = gitfs_get_object(path, 1);
 	if (!object) {
 		fprintf(stderr, "gitfs_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
@@ -90,7 +90,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	printf("Running gitfs_readdir(\"%s\", ...)\n", path);
 
-	struct gitfs_object * dir_node = gitfs_get_object(path, 0);
+	gitfs_object * dir_node = gitfs_get_object(path, 0);
         if (!dir_node || gitfs_get_type(dir_node) != GITFS_TREE) {
 		fprintf(stderr, "gitfs_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
@@ -101,7 +101,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
 	int num_items = gitfs_get_num_entries(dir_node);
-	struct gitfs_object * entry;
+	gitfs_object * entry;
 	for (int i=0; i < num_items; i++) {
 		entry = gitfs_get_tree_entry(dir_node, i, 0);
 		if (entry) {
@@ -119,7 +119,7 @@ static int gitfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int gitfs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
-	struct gitfs_object * object = gitfs_get_object(path, 0);
+	gitfs_object * object = gitfs_get_object(path, 0);
 	if (object)
 		fi->fh = (uint64_t) object;
 	else
@@ -132,7 +132,7 @@ static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
 {
         size_t len;
         (void) fi;
-	struct gitfs_object * object = (struct gitfs_object *) fi->fh;
+	gitfs_object * object = (gitfs_object *) fi->fh;
 	if (!object || gitfs_get_type(object) != GITFS_BLOB) {
 		fprintf(stderr, "gitfs_read: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
@@ -154,7 +154,7 @@ static int gitfs_read(const char *path, char *buf, size_t size, off_t offset,
 
 static int gitfs_release(const char * path, struct fuse_file_info *fi)
 {
-	gitfs_dispose((struct gitfs_object *) fi->fh);
+	gitfs_dispose((gitfs_object *) fi->fh);
 	return 0;
 }
 

@@ -19,7 +19,7 @@ void testRevisionInfo()
 
 void testGetRootTree()
 {
-	struct gitfs_object * root_tree = gitfs_get_object("/", 1);
+	gitfs_object * root_tree = gitfs_get_object("/", 1);
 	CU_ASSERT(root_tree != NULL);
 	if (root_tree) {
 		CU_ASSERT(gitfs_get_mode(root_tree) == 0555);
@@ -28,7 +28,7 @@ void testGetRootTree()
 		CU_ASSERT(num_items == 5);
 
 		// let's check the names of each one of the entries
-		struct gitfs_object * entry;
+		gitfs_object * entry;
 		for (int i=0; i < num_items; i++) {
 			entry = gitfs_get_tree_entry(root_tree, i, 1);
 			CU_ASSERT(entry != NULL);
@@ -104,7 +104,7 @@ void testGetRootTree()
 
 void testGetObjectByPathBlob()
 {
-	struct gitfs_object * object = gitfs_get_object("/tests/test.c", 1);
+	gitfs_object * object = gitfs_get_object("/tests/test.c", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitfs_get_type(object) == GITFS_BLOB);
@@ -125,7 +125,7 @@ void testGetObjectByPathBlob()
 
 void testGetExecObjectByPathBlob()
 {
-	struct gitfs_object * object = gitfs_get_object("/build.sh", 1);
+	gitfs_object * object = gitfs_get_object("/build.sh", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitfs_get_type(object) == GITFS_BLOB);
@@ -146,7 +146,7 @@ void testGetExecObjectByPathBlob()
 
 void testGetObjectByPathTree()
 {
-	struct gitfs_object * object = gitfs_get_object("tests", 1);
+	gitfs_object * object = gitfs_get_object("tests", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitfs_get_type(object) == GITFS_TREE);
@@ -160,7 +160,7 @@ void testGetObjectByPathTree()
 
 void testGetObjectByPathTreeWithoutMode()
 {
-	struct gitfs_object * object = gitfs_get_object("tests", 0);
+	gitfs_object * object = gitfs_get_object("tests", 0);
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitfs_get_type(object) == GITFS_TREE);
@@ -174,7 +174,7 @@ void testGetObjectByPathTreeWithoutMode()
 
 void testGetNonExistingObjectByPath()
 {
-	struct gitfs_object * object = gitfs_get_object("blahblah", 1);
+	gitfs_object * object = gitfs_get_object("blahblah", 1);
 	CU_ASSERT(!object);
 }
 

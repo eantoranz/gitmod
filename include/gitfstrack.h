@@ -22,9 +22,15 @@ enum gitfs_object_type {
 	GITFS_BLOB
 };
 
-struct gitfs_object;
+typedef struct {
+	git_tree * tree;
+	git_blob * blob;
+	char * name; // local name, _not_ fullpath
+	char * path; // full path
+	int mode;
+} gitfs_object;
 
-void gitfs_dispose(struct gitfs_object * object);
+void gitfs_dispose(gitfs_object * object);
 
 /**
  * Initialize everything
@@ -34,28 +40,28 @@ int gitfs_init(const char * repo_path, const char * treeish);
 /**
  * Get the object associated with this path
  */
-struct gitfs_object * gitfs_get_object(const char * path, int pull_mode);
+gitfs_object * gitfs_get_object(const char * path, int pull_mode);
 
-int gitfs_get_mode(struct gitfs_object * object);
+int gitfs_get_mode(gitfs_object * object);
 
-enum gitfs_object_type gitfs_get_type(struct gitfs_object * object);
+enum gitfs_object_type gitfs_get_type(gitfs_object * object);
 
-int gitfs_get_num_entries(struct gitfs_object * object);
+int gitfs_get_num_entries(gitfs_object * object);
 
 /**
  * Return the size of the object. If it is a tree,
  * will return the number of items.
  */
-int gitfs_get_size(struct gitfs_object * object);
+int gitfs_get_size(gitfs_object * object);
 
-struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index, int pull_mode);
+gitfs_object * gitfs_get_tree_entry(gitfs_object * tree, int index, int pull_mode);
 
-char * gitfs_get_name(struct gitfs_object * object);
+char * gitfs_get_name(gitfs_object * object);
 
 /**
  * do not free the pointer
  */
-const char * gitfs_get_content(struct gitfs_object * object);
+const char * gitfs_get_content(gitfs_object * object);
 
 /**
  * Close everything

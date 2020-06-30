@@ -11,14 +11,6 @@
 #include <git2.h>
 #include <unistd.h>
 
-struct gitfs_object {
-	git_tree * tree;
-	git_blob * blob;
-	char * name; // local name, _not_ fullpath
-	char * path; // full path
-	int mode;
-} gitfs_object;
-
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
@@ -77,7 +69,7 @@ end:
 	return ret;
 }
 
-void gitfs_dispose(struct gitfs_object * object)
+void gitfs_dispose(gitfs_object * object)
 {
 	if (object->blob)
 		git_blob_free(object->blob);
@@ -90,9 +82,9 @@ void gitfs_dispose(struct gitfs_object * object)
 	free(object);
 }
 
-static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
+static gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
 {
-	struct gitfs_object * object = calloc(1, sizeof(gitfs_object));
+	gitfs_object * object = calloc(1, sizeof(gitfs_object));
 	if (!object) {
 		return NULL;
 	}
@@ -118,15 +110,15 @@ static struct gitfs_object * gitfs_get_object_from_git_tree_entry(git_tree_entry
 	return object;
 }
 
-int gitfs_get_mode(struct gitfs_object * object)
+int gitfs_get_mode(gitfs_object * object)
 {
 	return object->mode;
 }
 
-struct gitfs_object * gitfs_get_object(const char *path, int pull_mode)
+gitfs_object * gitfs_get_object(const char *path, int pull_mode)
 {
 	int ret = 0;
-	struct gitfs_object * object = NULL;
+	gitfs_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
 	git_tree * root_tree = NULL;
 	root_tree = gitfs_get_root_tree();
@@ -163,7 +155,7 @@ end:
 	return object;
 }
 
-enum gitfs_object_type gitfs_get_type(struct gitfs_object * object) {
+enum gitfs_object_type gitfs_get_type(gitfs_object * object) {
 	if (object->tree) {
 		return GITFS_TREE;
 	}
@@ -173,7 +165,7 @@ enum gitfs_object_type gitfs_get_type(struct gitfs_object * object) {
 	return GITFS_UNKNOWN;
 }
 
-int gitfs_get_num_entries(struct gitfs_object * object)
+int gitfs_get_num_entries(gitfs_object * object)
 {
 	enum gitfs_object_type type = gitfs_get_type(object);
 	int res;
@@ -190,7 +182,7 @@ int gitfs_get_num_entries(struct gitfs_object * object)
 	return res;
 }
 
-int gitfs_get_size(struct gitfs_object * object)
+int gitfs_get_size(gitfs_object * object)
 {
 	int res;
 	
@@ -204,7 +196,7 @@ int gitfs_get_size(struct gitfs_object * object)
 	return res;
 }
 
-struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index, int pull_mode)
+gitfs_object * gitfs_get_tree_entry(gitfs_object * tree, int index, int pull_mode)
 {
 	if (!tree->tree)
 		// not a tree
@@ -215,7 +207,7 @@ struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index
 		return NULL;
 	}
 	// got the entry
-	struct gitfs_object * entry = gitfs_get_object_from_git_tree_entry(git_entry, pull_mode);
+	gitfs_object * entry = gitfs_get_object_from_git_tree_entry(git_entry, pull_mode);
 	if (!entry)
 		// could not create the object
 		return NULL;
@@ -224,12 +216,12 @@ struct gitfs_object * gitfs_get_tree_entry(struct gitfs_object * tree, int index
 	return entry;
 }
 
-char * gitfs_get_name(struct gitfs_object * object)
+char * gitfs_get_name(gitfs_object * object)
 {
 	return object->name;
 }
 
-const char * gitfs_get_content(struct gitfs_object * object)
+const char * gitfs_get_content(gitfs_object * object)
 {
 	if (!object->blob)
 		return NULL;
