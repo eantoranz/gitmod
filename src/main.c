@@ -43,7 +43,7 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn,
         return NULL;
 }
 
-static int gitmod_getattr(const char *path, struct stat *stbuf,
+static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
                          struct fuse_file_info *fi)
 {
         (void) fi;
@@ -72,15 +72,14 @@ static int gitmod_getattr(const char *path, struct stat *stbuf,
 	} else if (object_type == GITFS_BLOB){
 		stbuf->st_mode = S_IFREG | gitmod_get_mode(object);
 		stbuf->st_size = gitmod_get_size(object);
-	} else {
+	} else
 		res = -ENOENT;
-	}
 	gitmod_dispose(object);
 
         return res;
 }
 
-static int gitmod_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi,
                          enum fuse_readdir_flags flags)
 {
@@ -116,7 +115,7 @@ static int gitmod_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         return 0;
 }
 
-static int gitmod_open(const char * path, struct fuse_file_info *fi)
+static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
 	gitmod_object * object = gitmod_get_object(path, 0);
@@ -127,7 +126,7 @@ static int gitmod_open(const char * path, struct fuse_file_info *fi)
 	return ret;
 }
 
-static int gitmod_read(const char *path, char *buf, size_t size, off_t offset,
+static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
         size_t len;
@@ -152,13 +151,13 @@ static int gitmod_read(const char *path, char *buf, size_t size, off_t offset,
         return size;
 }
 
-static int gitmod_release(const char * path, struct fuse_file_info *fi)
+static int gitmod_fs_release(const char * path, struct fuse_file_info *fi)
 {
 	gitmod_dispose((gitmod_object *) fi->fh);
 	return 0;
 }
 
-static void gitmod_destroy()
+static void gitmod_fs_destroy()
 {
 	printf("Running gitmod_destroy()\n");
 	gitmod_shutdown();
@@ -167,12 +166,12 @@ static void gitmod_destroy()
 
 static const struct fuse_operations gitmod_oper = {
         .init           = gitmod_fs_init,
-	.getattr        = gitmod_getattr,
-	.readdir        = gitmod_readdir,
-	.open           = gitmod_open,
-	.read           = gitmod_read,
-	.release        = gitmod_release,
-	.destroy        = gitmod_destroy,
+	.getattr        = gitmod_fs_getattr,
+	.readdir        = gitmod_fs_readdir,
+	.open           = gitmod_fs_open,
+	.read           = gitmod_fs_read,
+	.release        = gitmod_fs_release,
+	.destroy        = gitmod_fs_destroy,
 };
 
 
