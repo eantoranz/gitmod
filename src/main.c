@@ -119,10 +119,13 @@ static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
 	gitmod_object * object = gitmod_get_object(path, 0);
-	if (object)
-		fi->fh = (uint64_t) object;
-	else
+	if (!object || gitmod_get_type(object) != GITFS_BLOB) {
+		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
+		if (object)
+			gitmod_dispose(object);
 		ret = -ENOENT;
+	} else
+		fi->fh = (uint64_t) object;
 	return ret;
 }
 
@@ -132,12 +135,6 @@ static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset
         size_t len;
         (void) fi;
 	gitmod_object * object = (gitmod_object *) fi->fh;
-	if (!object || gitmod_get_type(object) != GITFS_BLOB) {
-		fprintf(stderr, "gitmod_read: Could not find an object for path %s (or it's not a blob)\n", path);
-		if (object)
-			gitmod_dispose(object);
-		return -ENOENT;
-	}
 	
 	len = gitmod_get_size(object);
 	const char * contents = gitmod_get_content(object);
