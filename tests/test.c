@@ -9,20 +9,16 @@
 
 int main()
 {
-	CU_pSuite pSuite = NULL;
+	CU_pSuite pSuite1 = NULL, pSuite2 = NULL;
 
 	/* initialize the CUnit test registry */
 	if (CUE_SUCCESS != CU_initialize_registry())
 		return CU_get_error();
 
 	/* add a suite to the registry */
-	pSuite = suite1_setup();
-	if (NULL == pSuite) {
-		CU_cleanup_registry();
-		return CU_get_error();
-	}
-	pSuite = suite2_setup();
-	if (pSuite == NULL) {
+	pSuite1 = suite1_setup();
+	pSuite2 = suite2_setup();
+	if (!(pSuite1 && pSuite2)) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}

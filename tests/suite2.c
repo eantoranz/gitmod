@@ -3,7 +3,7 @@
  * Released under the terms of GPLv2
  * 
  * Suite 2
- *  Make sure we can NOT work on a treeish that is _not_ a revision
+ *  Make sure of the kinds of objects we can use as treeish
  */
 
 #include "gitmod.h"
