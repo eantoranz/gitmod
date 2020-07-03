@@ -10,6 +10,7 @@
 
 struct gitmod_info {
 	const char * treeish; // treeish that is asked to track
+	int treeish_is_tree; // will set to 1 if the object that was provided as treeish is a straight tree
 	git_repository * repo;
 	int gid; // provided by fuse
 	int uid; // provided by fuse

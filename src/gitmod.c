@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <git2.h>
 #include <unistd.h>
+#include <time.h>
 
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
@@ -26,6 +27,14 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 	
         if (check_type) {
 		git_otype object_type = git_object_type(treeish);
+		if (object_type == GIT_OBJ_TREE) {
+			// we can work straight from a tree
+			fprintf(stderr, "Threeish is a tree object straight\n");
+			root_tree = (git_tree *) treeish;
+			gitmod_info.time = time(NULL);
+			gitmod_info.treeish_is_tree = 1;
+			goto end;
+		}
 		if (object_type != GIT_OBJ_COMMIT) {
 			fprintf(stderr, "Treeish provided does not refer to a revision\n");
 			goto end;
@@ -33,15 +42,19 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 	}
 	
 	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
-	ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
-	if (ret) {
-		fprintf(stderr, "Could not find tree object for the revision\n");
-		root_tree = NULL;
-		goto end;
+	if (gitmod_info.treeish_is_tree)
+		root_tree = (git_tree *) treeish;
+	else {
+		ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
+		if (ret) {
+			fprintf(stderr, "Could not find tree object for the revision\n");
+			goto end;
+		}
+		gitmod_info.time = git_commit_time((git_commit *) treeish);
 	}
-	gitmod_info.time = git_commit_time((git_commit *) treeish);
 end:
-	git_object_free(treeish);
+	if (!gitmod_info.treeish_is_tree)
+		git_object_free(treeish);
 	
 	return root_tree;
 }

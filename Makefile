@@ -11,7 +11,7 @@ gitmod.o:
 	$(CC) -c -o gitmod.o src/gitmod.c $(CFLAGS)
 
 gitmod: gitmod.o
-	$(CC) src/main.c gitmod.o -o gitmod $(CFLAGS) 
+	$(CC) src/main.c gitmod.o -o gitmod $(CFLAGS)
 
 test: gitmod.o
 	$(CC) tests/test.c tests/suite*.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
