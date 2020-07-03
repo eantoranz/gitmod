@@ -3,7 +3,7 @@
 
 CC=gcc
 CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 --cflags --libs`
-CFLAGSTEST=-lcunit
+CFLAGSTEST=-lcunit -Itests
 
 default: gitmod test
 
@@ -14,7 +14,7 @@ gitmod: gitmod.o
 	$(CC) src/main.c gitmod.o -o gitmod $(CFLAGS) 
 
 test: gitmod.o
-	$(CC) tests/test.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
+	$(CC) tests/test.c tests/suite*.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
 
 clean:
 	rm test gitmod gitmod.o

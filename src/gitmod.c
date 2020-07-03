@@ -14,27 +14,34 @@
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
-static git_tree * gitmod_get_root_tree() {
+static git_tree * gitmod_get_root_tree(int check_type) {
 	int ret;
-	git_object * revision;
-	ret = git_revparse_single(&revision, gitmod_info.repo, gitmod_info.treeish);
+	git_object * treeish = NULL;
+	git_tree * root_tree = NULL;
+	ret = git_revparse_single(&treeish, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
 		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", gitmod_info.treeish);
 		return NULL;
 	}
-
-	// TODO how can I make sure the object is a git_commit?
+	
+        if (check_type) {
+		git_otype object_type = git_object_type(treeish);
+		if (object_type != GIT_OBJ_COMMIT) {
+			fprintf(stderr, "Treeish provided does not refer to a revision\n");
+			goto end;
+		}
+	}
+	
 	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
-	git_tree * root_tree;
-	ret =  git_commit_tree(&root_tree, (git_commit *) revision);
+	ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
 	if (ret) {
 		fprintf(stderr, "Could not find tree object for the revision\n");
 		root_tree = NULL;
 		goto end;
 	}
-	gitmod_info.time = git_commit_time((git_commit *) revision);
+	gitmod_info.time = git_commit_time((git_commit *) treeish);
 end:
-	git_object_free(revision);
+	git_object_free(treeish);
 	
 	return root_tree;
 }
@@ -55,7 +62,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	}
 
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
-	git_tree * root_tree = gitmod_get_root_tree();
+	git_tree * root_tree = gitmod_get_root_tree(1);
 	if (!root_tree) {
 		fprintf(stderr, "Could not open root tree for treeish");
 		return -ENOENT;
@@ -121,7 +128,7 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
 	git_tree * root_tree = NULL;
-	root_tree = gitmod_get_root_tree();
+	root_tree = gitmod_get_root_tree(0);
 	if (!root_tree) {
 		goto end;
 	}
