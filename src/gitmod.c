@@ -21,28 +21,31 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 	git_tree * root_tree = NULL;
 	ret = git_revparse_single(&treeish, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
-		fprintf(stderr, "There was error parsing the threeish %s on the repo\n", gitmod_info.treeish);
+		fprintf(stderr, "There was error parsing the threeish %s\n", gitmod_info.treeish);
 		return NULL;
 	}
 	
         if (check_type) {
 		git_otype object_type = git_object_type(treeish);
-		if (object_type == GIT_OBJ_TREE) {
-			// we can work straight from a tree
+		switch (object_type) {
+		case GIT_OBJ_TREE:
 			fprintf(stderr, "Threeish is a tree object straight\n");
 			root_tree = (git_tree *) treeish;
 			gitmod_info.time = time(NULL);
-			gitmod_info.treeish_is_tree = 1;
+			gitmod_info.treeish_type = GIT_OBJ_TREE;
 			goto end;
-		}
-		if (object_type != GIT_OBJ_COMMIT) {
+		case GIT_OBJ_COMMIT:
+			// business as usual
+			break;
+		default:
 			fprintf(stderr, "Treeish provided does not refer to a revision\n");
 			goto end;
 		}
+		gitmod_info.treeish_type = object_type;
 	}
 	
 	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
-	if (gitmod_info.treeish_is_tree)
+	if (gitmod_info.treeish_type == GIT_OBJECT_TREE)
 		root_tree = (git_tree *) treeish;
 	else {
 		ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
@@ -53,7 +56,7 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 		gitmod_info.time = git_commit_time((git_commit *) treeish);
 	}
 end:
-	if (!gitmod_info.treeish_is_tree)
+	if (gitmod_info.treeish_type != GIT_OBJECT_TREE)
 		git_object_free(treeish);
 	
 	return root_tree;

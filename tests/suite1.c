@@ -19,6 +19,7 @@ static void suite1_testRevisionInfo()
 {
 	fprintf(stderr, "Revision time: %ld\n", gitmod_info.time);
 	CU_ASSERT(gitmod_info.time == 1593046557);
+	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
 }
 
 static void suite1_testGetRootTree()
