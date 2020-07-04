@@ -9,6 +9,8 @@
 #include "gitmod.h"
 #include <CUnit/Basic.h>
 
+// TODO add tests for signed tags
+
 static void suite2_treeish_is_tree()
 {
 	int ret = gitmod_init(".", "99a4ae6337c961b967e9f91c328c85c3f01e7aaf"); // tree of v0.4
