@@ -22,12 +22,16 @@ Run: make
 That will generate a binary called gitmod
 
 Usage:
-- It supports the standard options provided by fuse. It also has 2 more options:
-
+It supports the standard options provided by fuse.
+It also provides a few more options
 --treeish: use to specify which treeish to track (branch/tag/revision). Default is HEAD
 --repo: use to specify which repo to expose contents from. Default: ./
+-x: allow execution bit for files (by default this is disabled)
+
+Check details with ./gitmod -h
 
 
+IMPORTANT:
 This is very alpha software at the moment so:
 *** DO NOT USE IT IN PRODUCTION ***
 *** USE AT YOUR OWN RISK ***

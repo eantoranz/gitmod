@@ -18,6 +18,7 @@
 static struct options {
 	const char *repo_path; // path to git repo,
 	const char *treeish; // treeish to use
+	const int allow_exec; // allow exec bit for files (default: 0)
 	int show_help;
 } options;
 
@@ -27,6 +28,8 @@ static struct options {
 static const struct fuse_opt option_spec[] = {
 	OPTION("--repo=%s", repo_path),
 	OPTION("--treeish=%s", treeish),
+	OPTION("--allow-exec", allow_exec),
+	OPTION("-x", allow_exec),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
 	FUSE_OPT_END
@@ -70,7 +73,8 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
                 stbuf->st_mode = S_IFDIR | 0555; // mode is always 0 for trees
 		stbuf->st_nlink+=2;
 	} else if (object_type == GITFS_BLOB){
-		stbuf->st_mode = S_IFREG | gitmod_get_mode(object);
+		stbuf->st_mode = S_IFREG |
+				 (gitmod_get_mode(object) & (options.allow_exec ? 0777 : 0666));
 		stbuf->st_size = gitmod_get_size(object);
 	} else
 		res = -ENOENT;
@@ -181,6 +185,8 @@ static void show_help(const char *progname)
 	       "    --treeish=<s>       Treeish to use on the root of the mount point\n"
 	       "                        It can be a branch, a revision or a tag.\n"
 	       "                        (default: HEAD)\n"
+               "    -x   --allow-exec   Allow execution flag on files\n"
+               "                        (default: no)\n"
                "\n");
 }
 
@@ -208,13 +214,14 @@ int main(int argc, char *argv[])
                 show_help(argv[0]);
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
-        }
+        } else {
+		ret = gitmod_init(options.repo_path, options.treeish);
 
-	ret = gitmod_init(options.repo_path, options.treeish);
-
-	if (ret)
-		gitmod_shutdown();
-	else
+		if (ret)
+			gitmod_shutdown();
+	}
+	
+	if (!ret)
 		fuse_main(args.argc, args.argv, &gitmod_oper, NULL);
 
 	return ret;
