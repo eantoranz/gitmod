@@ -1,16 +1,15 @@
 Copyright 2020 Edmundo Carmona Antoranz
 Released under the terms of GPLv2
 
-Hi!
+gitmod: a fuse-based (at least for the time being) FS.
 
-Thanks for taking the time to read this document.
-
-What I want to do is create a fuse-based (at least for the time being)
-FS so that content from branches, tags or revisions can be shown.
+gitmod can be used to virtually display the content of
+revisions/tags/branches on a read-only mount-point.
 
 At the moment it does the very basics:
 - Lists files in the tree on the mount point
 - Get content of files
+- Permissions of executables are kept
 
 Dependencies
 - libgit2
