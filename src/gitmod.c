@@ -34,7 +34,7 @@ static git_tree * gitmod_get_tree_from_tag(git_tag * tag)
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
-static git_tree * gitmod_get_root_tree(int check_type) {
+static git_tree * gitmod_get_root_tree() {
 	int ret;
 	git_object * treeish = NULL;
 	git_tree * root_tree = NULL;
@@ -44,34 +44,32 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 		return NULL;
 	}
 	
-        if (check_type) {
-		git_otype object_type = git_object_type(treeish);
-		git_otype tag_target_type;
-		switch (object_type) {
-		case GIT_OBJ_TREE:
-			fprintf(stderr, "Threeish is a tree object straight\n");
-			root_tree = (git_tree *) treeish;
-			gitmod_info.time = time(NULL);
-			gitmod_info.treeish_type = GIT_OBJ_TREE;
-			goto end;
-		case GIT_OBJ_COMMIT:
-			// business as usual
-			break;
-		case GIT_OBJ_TAG:
-			// signed tag
-			// type of object that it points to has to be a commit
-			tag_target_type = git_tag_target_type((git_tag *) treeish);
-			if (tag_target_type != GIT_OBJ_COMMIT) {
-				fprintf(stderr, "Signed tag does not point to a revision\n");
-				goto end;
-			}
-			break;
-		default:
-			fprintf(stderr, "Treeish provided does not refer to a revision\n");
+	git_otype object_type = git_object_type(treeish);
+	git_otype tag_target_type;
+	switch (object_type) {
+	case GIT_OBJ_TREE:
+		fprintf(stderr, "Threeish is a tree object straight\n");
+		root_tree = (git_tree *) treeish;
+		gitmod_info.time = time(NULL);
+		gitmod_info.treeish_type = GIT_OBJ_TREE;
+		goto end;
+	case GIT_OBJ_COMMIT:
+		// business as usual
+		break;
+	case GIT_OBJ_TAG:
+		// signed tag
+		// type of object that it points to has to be a commit
+		tag_target_type = git_tag_target_type((git_tag *) treeish);
+		if (tag_target_type != GIT_OBJ_COMMIT) {
+			fprintf(stderr, "Signed tag does not point to a revision\n");
 			goto end;
 		}
-		gitmod_info.treeish_type = object_type;
+		break;
+	default:
+		fprintf(stderr, "Treeish provided does not refer to a revision\n");
+		goto end;
 	}
+	gitmod_info.treeish_type = object_type;
 	
 	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
 	switch(gitmod_info.treeish_type) {
@@ -112,7 +110,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	}
 
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
-	git_tree * root_tree = gitmod_get_root_tree(1);
+	git_tree * root_tree = gitmod_get_root_tree();
 	if (!root_tree) {
 		fprintf(stderr, "Could not open root tree for treeish");
 		return -ENOENT;
@@ -120,8 +118,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree)));
 	
-	// we can dispose of the tree cause we don't need it at the moment and we won't save it
-	git_tree_free(root_tree);
+	gitmod_info.root_tree = root_tree;
 end:
 	return ret;
 }
@@ -177,8 +174,7 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	int ret = 0;
 	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
-	git_tree * root_tree = NULL;
-	root_tree = gitmod_get_root_tree(0);
+	git_tree * root_tree = gitmod_info.root_tree;
 	if (!root_tree) {
 		goto end;
 	}
@@ -205,8 +201,6 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 end:
 	if (object)
 		object->path = strdup(path);
-	if (root_tree)
-		git_tree_free(root_tree);
 	if (tree_entry)
 		git_tree_entry_free(tree_entry);
 	return object;
