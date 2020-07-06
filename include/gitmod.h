@@ -12,6 +12,9 @@
 typedef struct {
 	git_tree * tree;
 	time_t time;
+	gitmod_locker * lock;
+	int usage_counter;
+	int marked_for_deletion;
 } gitmod_root_tree;
 
 struct gitmod_info {
@@ -21,7 +24,7 @@ struct gitmod_info {
 	gitmod_root_tree * root_tree;
 	int gid; // provided by fuse
 	int uid; // provided by fuse
-	gitmod_locker lock;
+	gitmod_locker * lock;
 } gitmod_info;
 
 enum gitmod_object_type {

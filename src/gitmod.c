@@ -13,6 +13,35 @@
 #include "gitmod.h"
 #include "lock.h"
 
+static void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree)
+{
+	if (!root_tree)
+		return;
+	gitmod_lock(root_tree->lock);
+	root_tree->usage_counter++;
+	gitmod_unlock(root_tree->lock);
+}
+
+/**
+ * Decrease usage. Will get a lock to do the decrease.
+ * If the root_tree has been set for deletion _and_ the counter reached 0 on this call, we will free it
+ */
+static void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
+{
+	if (!root_tree)
+		return;
+	int delete_root_tree;
+	gitmod_lock(root_tree->lock);
+	root_tree->usage_counter--;
+	delete_root_tree = root_tree->marked_for_deletion && root_tree->usage_counter <= 0;
+	gitmod_unlock(root_tree->lock);
+	if (delete_root_tree) {
+		gitmod_locker_destroy(root_tree->lock);
+		git_tree_free(root_tree->tree);
+		free(root_tree);
+	}
+}
+
 static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
 	git_object * target;
@@ -39,7 +68,7 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 	int ret;
 	git_object * treeish = NULL;
 	git_tree * root_tree = NULL;
-	gitmod_root_tree * gitmod_root_tree = NULL;
+	gitmod_root_tree * root_tree_node = NULL;
 	time_t revision_time;
 	ret = git_revparse_single(&treeish, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
@@ -92,14 +121,15 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 	}
 end:
 	if (root_tree) {
-		gitmod_root_tree = calloc(1, sizeof(gitmod_root_tree));
-		gitmod_root_tree->tree = root_tree;
-		gitmod_root_tree->time = revision_time;
+		root_tree_node = calloc(1, sizeof(gitmod_root_tree));
+		root_tree_node->tree = root_tree;
+		root_tree_node->time = revision_time;
+		root_tree_node->lock = gitmod_locker_create();
 	}
 	if (gitmod_info.treeish_type != GIT_OBJECT_TREE)
 		git_object_free(treeish);
 	
-	return gitmod_root_tree;
+	return root_tree_node;
 }
 
 int gitmod_init(const char * repo_path, const char * treeish)
@@ -127,6 +157,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
 	
 	gitmod_info.root_tree = root_tree;
+	gitmod_info.lock = gitmod_locker_create();
 end:
 	return ret;
 }
@@ -183,28 +214,27 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
 	// Will make sure to be the only one looking at the root_tree
-	gitmod_lock(&gitmod_info.lock);
-	git_tree * root_tree = gitmod_info.root_tree->tree;
+	gitmod_lock(gitmod_info.lock);
+	gitmod_root_tree * root_tree = gitmod_info.root_tree;
+	gitmod_root_tree_increase_usage(root_tree); // it will get a lock and release it for increasign counter
+	gitmod_unlock(gitmod_info.lock);
 	if (!root_tree) {
-		gitmod_unlock(&gitmod_info.lock);
 		goto end;
 	}
-	// TODO will increase the usage the the root_tree
-	// then we can release the lock
-	gitmod_unlock(&gitmod_info.lock);
 	if (!(strlen(path) && strcmp(path, "/"))) {
 		// root tree
 		object = calloc(1, sizeof(gitmod_object));
 		object->path = strdup("/");
 		object->name = strdup("/");
-		object->tree = root_tree;
+		object->tree = root_tree->tree;
 		if (pull_mode)
 			object->mode = 0555; // TODO can we get more info about what the perms are for the mount point?
+		gitmod_root_tree_decrease_usage(root_tree);
 		return object;
 	}
 
 	
-	ret = git_tree_entry_bypath(&tree_entry, root_tree, path + (path[0] == '/' ? 1 : 0));
+	ret = git_tree_entry_bypath(&tree_entry, root_tree->tree, path + (path[0] == '/' ? 1 : 0));
 	if (ret) {
 		fprintf(stderr, "Could not find the object for the path %s\n", path);
 		tree_entry = NULL;
@@ -217,6 +247,7 @@ end:
 		object->path = strdup(path);
 	if (tree_entry)
 		git_tree_entry_free(tree_entry);
+	gitmod_root_tree_decrease_usage(root_tree);
 	return object;
 }
 
@@ -296,6 +327,7 @@ const char * gitmod_get_content(gitmod_object * object)
 void gitmod_shutdown()
 {
 	git_repository_free(gitmod_info.repo);
+	gitmod_locker_destroy(gitmod_info.lock);
 	// going out, for the time being
 	git_libgit2_shutdown();
 }

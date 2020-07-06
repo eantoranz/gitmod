@@ -12,8 +12,12 @@ typedef struct {
 	pthread_mutex_t lock;
 } gitmod_locker;
 
+gitmod_locker * gitmod_locker_create();
+
 void gitmod_lock(gitmod_locker * locker);
 
 void gitmod_unlock(gitmod_locker * locker);
+
+void gitmod_locker_destroy(gitmod_locker * locker);
 
 #endif
