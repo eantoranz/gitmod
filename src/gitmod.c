@@ -3,7 +3,6 @@
  * Released under the terms of GPLv2
  */
 
-#include "gitmod.h"
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -11,6 +10,8 @@
 #include <git2.h>
 #include <unistd.h>
 #include <time.h>
+#include "gitmod.h"
+#include "lock.h"
 
 static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
@@ -181,10 +182,16 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	int ret = 0;
 	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
+	// Will make sure to be the only one looking at the root_tree
+	gitmod_lock(&gitmod_info.lock);
 	git_tree * root_tree = gitmod_info.root_tree->tree;
 	if (!root_tree) {
+		gitmod_unlock(&gitmod_info.lock);
 		goto end;
 	}
+	// TODO will increase the usage the the root_tree
+	// then we can release the lock
+	gitmod_unlock(&gitmod_info.lock);
 	if (!(strlen(path) && strcmp(path, "/"))) {
 		// root tree
 		object = calloc(1, sizeof(gitmod_object));

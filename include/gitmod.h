@@ -3,10 +3,11 @@
  * Released under the terms of GPLv2
  */
 
-#ifndef GITFS_H
-#define GITFS_H
+#ifndef GITMOD_H
+#define GITFMOD_H
 
 #include <git2.h>
+#include "lock.h"
 
 typedef struct {
 	git_tree * tree;
@@ -20,6 +21,7 @@ struct gitmod_info {
 	gitmod_root_tree * root_tree;
 	int gid; // provided by fuse
 	int uid; // provided by fuse
+	gitmod_locker lock;
 } gitmod_info;
 
 enum gitmod_object_type {

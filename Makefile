@@ -7,14 +7,17 @@ CFLAGSTEST=-lcunit -Itests
 
 default: gitmod test
 
-gitmod.o:
+lock.o:
+	$(CC) -c -o lock.o src/lock.c $(CFLAGS)
+
+gitmod.o: lock.o
 	$(CC) -c -o gitmod.o src/gitmod.c $(CFLAGS)
 
 gitmod: gitmod.o
-	$(CC) src/main.c gitmod.o -o gitmod $(CFLAGS)
+	$(CC) src/main.c gitmod.o lock.o -o gitmod $(CFLAGS)
 
 test: gitmod.o
-	$(CC) tests/test.c tests/suite*.c gitmod.o -o test $(CFLAGS) $(CFLAGSTEST)
+	$(CC) tests/test.c tests/suite*.c gitmod.o lock.o -o test $(CFLAGS) $(CFLAGSTEST)
 
 clean:
-	rm test gitmod gitmod.o
+	rm test gitmod *.o
