@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <time.h>
 
-static git_tree * gitmod_get_tree_from_tag(git_tag * tag)
+static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
 	git_object * target;
 	int ret = git_tag_target(&target, tag);
@@ -20,7 +20,7 @@ static git_tree * gitmod_get_tree_from_tag(git_tag * tag)
 		fprintf(stderr, "There was an error trying to get target from signed tag\n");
 		return NULL;
 	}
-	gitmod_info.time = git_commit_time((git_commit *) target);
+	*time = git_commit_time((git_commit *) target);
 	git_tree * tree;
 	ret = git_commit_tree(&tree, (git_commit *) target);
 	if (ret) {
@@ -34,10 +34,12 @@ static git_tree * gitmod_get_tree_from_tag(git_tag * tag)
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
-static git_tree * gitmod_get_root_tree() {
+static gitmod_root_tree * gitmod_get_root_tree() {
 	int ret;
 	git_object * treeish = NULL;
 	git_tree * root_tree = NULL;
+	gitmod_root_tree * gitmod_root_tree = NULL;
+	time_t revision_time;
 	ret = git_revparse_single(&treeish, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
 		fprintf(stderr, "There was error parsing the threeish %s\n", gitmod_info.treeish);
@@ -50,7 +52,7 @@ static git_tree * gitmod_get_root_tree() {
 	case GIT_OBJ_TREE:
 		fprintf(stderr, "Threeish is a tree object straight\n");
 		root_tree = (git_tree *) treeish;
-		gitmod_info.time = time(NULL);
+		revision_time = time(NULL);
 		gitmod_info.treeish_type = GIT_OBJ_TREE;
 		goto end;
 	case GIT_OBJ_COMMIT:
@@ -77,7 +79,7 @@ static git_tree * gitmod_get_root_tree() {
 		root_tree = (git_tree *) treeish;
 		break;
 	case GIT_OBJ_TAG:
-		root_tree = gitmod_get_tree_from_tag((git_tag *) treeish);
+		root_tree = gitmod_get_tree_from_tag((git_tag *) treeish, &revision_time);
 		break;
 	default:
 		ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
@@ -85,13 +87,18 @@ static git_tree * gitmod_get_root_tree() {
 			fprintf(stderr, "Could not find tree object for the revision\n");
 			goto end;
 		}
-		gitmod_info.time = git_commit_time((git_commit *) treeish);
+		revision_time = git_commit_time((git_commit *) treeish);
 	}
 end:
+	if (root_tree) {
+		gitmod_root_tree = calloc(1, sizeof(gitmod_root_tree));
+		gitmod_root_tree->tree = root_tree;
+		gitmod_root_tree->time = revision_time;
+	}
 	if (gitmod_info.treeish_type != GIT_OBJECT_TREE)
 		git_object_free(treeish);
 	
-	return root_tree;
+	return gitmod_root_tree;
 }
 
 int gitmod_init(const char * repo_path, const char * treeish)
@@ -110,13 +117,13 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	}
 
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
-	git_tree * root_tree = gitmod_get_root_tree();
+	gitmod_root_tree * root_tree = gitmod_get_root_tree();
 	if (!root_tree) {
 		fprintf(stderr, "Could not open root tree for treeish");
 		return -ENOENT;
 	}
 	
-	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree)));
+	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
 	
 	gitmod_info.root_tree = root_tree;
 end:
@@ -174,7 +181,7 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	int ret = 0;
 	gitmod_object * object = NULL;
 	git_tree_entry * tree_entry = NULL;
-	git_tree * root_tree = gitmod_info.root_tree;
+	git_tree * root_tree = gitmod_info.root_tree->tree;
 	if (!root_tree) {
 		goto end;
 	}

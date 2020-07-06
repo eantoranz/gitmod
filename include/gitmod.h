@@ -8,14 +8,18 @@
 
 #include <git2.h>
 
+typedef struct {
+	git_tree * tree;
+	time_t time;
+} gitmod_root_tree;
+
 struct gitmod_info {
 	git_repository * repo;
 	const char * treeish; // treeish that is asked to track
 	git_otype treeish_type;
-	git_tree * root_tree;
+	gitmod_root_tree * root_tree;
 	int gid; // provided by fuse
 	int uid; // provided by fuse
-	time_t time; // time associated to the revision
 } gitmod_info;
 
 enum gitmod_object_type {

@@ -62,9 +62,9 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	}
 
         memset(stbuf, 0, sizeof(struct stat));
-	stbuf->st_atime = gitmod_info.time;
-	stbuf->st_ctime = gitmod_info.time;
-	stbuf->st_mtime = gitmod_info.time;
+	stbuf->st_atime = gitmod_info.root_tree->time;
+	stbuf->st_ctime = gitmod_info.root_tree->time;
+	stbuf->st_mtime = gitmod_info.root_tree->time;
 	stbuf->st_uid = gitmod_info.uid;
 	stbuf->st_gid = gitmod_info.gid;
 	stbuf->st_nlink = gitmod_get_num_entries(object);
