@@ -9,6 +9,8 @@
 #include <git2.h>
 #include "lock.h"
 
+#define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
+
 typedef struct {
 	git_tree * tree;
 	time_t time;
@@ -28,6 +30,7 @@ struct gitmod_info {
 	pthread_t root_tree_monitor;
 	int run_root_tree_monitor;
 	int root_tree_monitor_running;
+	int root_tree_monitor_delay; // delay in milliseconds (0 means it's a tight loop). Default will be set to 100
 } gitmod_info;
 
 enum gitmod_object_type {

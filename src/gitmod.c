@@ -111,7 +111,6 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 	}
 	gitmod_info.treeish_type = object_type;
 	
-	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
 	switch(gitmod_info.treeish_type) {
 	case GIT_OBJ_TREE:
 		root_tree = (git_tree *) treeish;
@@ -146,6 +145,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 
 	// save the treeish
 	gitmod_info.treeish = treeish;
+	gitmod_info.root_tree_monitor_delay = ROOT_TREEE_MONITOR_DEFAULT_DELAY;
 
 	git_libgit2_init();
 	ret = git_repository_open(&gitmod_info.repo, repo_path);
@@ -376,7 +376,7 @@ static void * gitmod_root_tree_monitor_task()
 			} else
 				gitmod_root_tree_dispose(new_tree);
 		}
-		usleep(1000 * 1000); // one second delay
+		usleep(gitmod_info.root_tree_monitor_delay * 1000);
 	}
 	return NULL;
 }
