@@ -25,6 +25,9 @@ struct gitmod_info {
 	int gid; // provided by fuse
 	int uid; // provided by fuse
 	gitmod_locker * lock;
+	pthread_t root_tree_monitor;
+	int run_root_tree_monitor;
+	int root_tree_monitor_running;
 } gitmod_info;
 
 enum gitmod_object_type {

@@ -13,6 +13,16 @@
 #include "gitmod.h"
 #include "lock.h"
 
+static void gitmod_root_tree_start_monitor();
+static void gitmod_root_tree_stop_monitor();
+
+static void gitmod_root_tree_dispose(gitmod_root_tree * root_tree)
+{
+	gitmod_locker_destroy(root_tree->lock);
+	git_tree_free(root_tree->tree);
+	free(root_tree);
+}
+
 static void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree)
 {
 	if (!root_tree)
@@ -36,9 +46,7 @@ static void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	delete_root_tree = root_tree->marked_for_deletion && root_tree->usage_counter <= 0;
 	gitmod_unlock(root_tree->lock);
 	if (delete_root_tree) {
-		gitmod_locker_destroy(root_tree->lock);
-		git_tree_free(root_tree->tree);
-		free(root_tree);
+		gitmod_root_tree_dispose(root_tree);
 	}
 }
 
@@ -158,6 +166,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	
 	gitmod_info.root_tree = root_tree;
 	gitmod_info.lock = gitmod_locker_create();
+	gitmod_root_tree_start_monitor();
 end:
 	return ret;
 }
@@ -326,8 +335,67 @@ const char * gitmod_get_content(gitmod_object * object)
 
 void gitmod_shutdown()
 {
+	gitmod_root_tree_stop_monitor();
 	git_repository_free(gitmod_info.repo);
-	gitmod_locker_destroy(gitmod_info.lock);
+	if (gitmod_info.lock)
+		gitmod_locker_destroy(gitmod_info.lock);
 	// going out, for the time being
 	git_libgit2_shutdown();
+}
+
+static void * gitmod_root_tree_monitor_task()
+{
+	while (gitmod_info.run_root_tree_monitor) {
+		gitmod_root_tree * new_tree = gitmod_get_root_tree();
+		if (new_tree) {
+			if (git_oid_cmp(git_tree_id(gitmod_info.root_tree->tree), git_tree_id(new_tree->tree))) {
+				// apparently the tree moved....
+				gitmod_lock(gitmod_info.lock);
+				
+				gitmod_root_tree * old_tree = gitmod_info.root_tree;
+				
+				// now we are the only one watching the old tree
+				if (git_oid_cmp(git_tree_id(old_tree->tree), git_tree_id(new_tree->tree))) {
+					printf("root tree changed\n");
+					// it did change, indeed
+					// we can replace the old tree with the new one and let it run normally
+					gitmod_info.root_tree = new_tree;
+				}
+				
+				gitmod_unlock(gitmod_info.lock); // no need to make anybody wait, the new tree can be used from now on
+				
+				if (old_tree != new_tree) {
+					gitmod_lock(old_tree->lock);
+					// set if for deletion right away
+					old_tree->marked_for_deletion = 1;
+					int delete_root_tree = old_tree->usage_counter == 0;
+					gitmod_unlock(old_tree->lock);
+					if (delete_root_tree)
+					gitmod_root_tree_dispose(old_tree);
+				}
+			} else
+				gitmod_root_tree_dispose(new_tree);
+		}
+		usleep(1000 * 1000); // one second delay
+	}
+	return NULL;
+}
+
+/**
+ * Start the monitor that will take care of checking the root tree
+ */
+static void gitmod_root_tree_start_monitor()
+{
+	gitmod_info.run_root_tree_monitor = 1;
+	pthread_create(&gitmod_info.root_tree_monitor, NULL, gitmod_root_tree_monitor_task, NULL);
+	gitmod_info.root_tree_monitor_running = 1;
+}
+
+static void gitmod_root_tree_stop_monitor()
+{
+	if (gitmod_info.root_tree_monitor_running) {
+		gitmod_info.run_root_tree_monitor = 0;
+		pthread_join(gitmod_info.root_tree_monitor, NULL);
+		gitmod_info.root_tree_monitor_running = 0;
+	}
 }
