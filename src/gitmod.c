@@ -12,43 +12,10 @@
 #include <time.h>
 #include "gitmod.h"
 #include "lock.h"
+#include "root_tree.h"
 
 static void gitmod_root_tree_start_monitor();
 static void gitmod_root_tree_stop_monitor();
-
-static void gitmod_root_tree_dispose(gitmod_root_tree * root_tree)
-{
-	gitmod_locker_destroy(root_tree->lock);
-	git_tree_free(root_tree->tree);
-	free(root_tree);
-}
-
-static void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree)
-{
-	if (!root_tree)
-		return;
-	gitmod_lock(root_tree->lock);
-	root_tree->usage_counter++;
-	gitmod_unlock(root_tree->lock);
-}
-
-/**
- * Decrease usage. Will get a lock to do the decrease.
- * If the root_tree has been set for deletion _and_ the counter reached 0 on this call, we will free it
- */
-static void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
-{
-	if (!root_tree)
-		return;
-	int delete_root_tree;
-	gitmod_lock(root_tree->lock);
-	root_tree->usage_counter--;
-	delete_root_tree = root_tree->marked_for_deletion && root_tree->usage_counter <= 0;
-	gitmod_unlock(root_tree->lock);
-	if (delete_root_tree) {
-		gitmod_root_tree_dispose(root_tree);
-	}
-}
 
 static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
