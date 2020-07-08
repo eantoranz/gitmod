@@ -19,6 +19,7 @@ static struct options {
 	const char *repo_path; // path to git repo,
 	const char *treeish; // treeish to use
 	const int allow_exec; // allow exec bit for files (default: 0)
+	const int fix; // do not track changes of references
 	int show_help;
 } options;
 
@@ -30,6 +31,7 @@ static const struct fuse_opt option_spec[] = {
 	OPTION("--treeish=%s", treeish),
 	OPTION("--allow-exec", allow_exec),
 	OPTION("-x", allow_exec),
+	OPTION("--fix", fix),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
 	FUSE_OPT_END
@@ -40,7 +42,7 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn,
 {
         (void) conn;
 	printf("Running gitmod_init(...)\n");
-	cfg->kernel_cache = 0; // TODO can use cache if working from a revision or tags (cause they are not _supposed_ to move, right?)
+	cfg->kernel_cache = options.fix;
         gitmod_info.uid = cfg->set_uid;
 	gitmod_info.gid = cfg->set_gid;
         return NULL;
@@ -187,6 +189,8 @@ static void show_help(const char *progname)
 	       "                        (default: HEAD)\n"
                "    -x   --allow-exec   Allow execution flag on files\n"
                "                        (default: no)\n"
+	       "    --fix               Do not track changes in references.\n"
+	       "                        Useful if using a tag\n"
                "\n");
 }
 
@@ -215,6 +219,7 @@ int main(int argc, char *argv[])
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
         } else {
+		gitmod_info.fix = options.fix;
 		ret = gitmod_init(options.repo_path, options.treeish);
 
 		if (ret)

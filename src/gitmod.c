@@ -112,7 +112,6 @@ int gitmod_init(const char * repo_path, const char * treeish)
 
 	// save the treeish
 	gitmod_info.treeish = treeish;
-	root_tree_monitor_info.delay = ROOT_TREEE_MONITOR_DEFAULT_DELAY;
 
 	git_libgit2_init();
 	ret = git_repository_open(&gitmod_info.repo, repo_path);
@@ -133,7 +132,12 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	
 	gitmod_info.root_tree = root_tree;
 	gitmod_info.lock = gitmod_locker_create();
-	gitmod_root_tree_start_monitor(gitmod_root_tree_monitor_task);
+	if (!gitmod_info.fix) {
+		gitmod_info.root_tree_monitor = gitmod_root_tree_monitor_create(gitmod_root_tree_monitor_task);
+		if (!gitmod_info.root_tree_monitor)
+			fprintf(stderr, "Could not create root tree monitor. Will be fixed on the starting root tree\n");
+	} else
+		printf("Root tree will be fixed\n");
 end:
 	return ret;
 }
@@ -302,7 +306,9 @@ const char * gitmod_get_content(gitmod_object * object)
 
 void gitmod_shutdown()
 {
-	gitmod_root_tree_stop_monitor();
+	if (gitmod_info.root_tree_monitor)
+		gitmod_root_tree_monitor_release(gitmod_info.root_tree_monitor);
+	gitmod_info.root_tree_monitor = NULL;
 	git_repository_free(gitmod_info.repo);
 	if (gitmod_info.lock)
 		gitmod_locker_destroy(gitmod_info.lock);

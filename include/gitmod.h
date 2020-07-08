@@ -9,6 +9,7 @@
 #include <git2.h>
 #include "lock.h"
 #include "root_tree.h"
+#include "root_tree_monitor.h"
 
 struct gitmod_info {
 	git_repository * repo;
@@ -18,6 +19,8 @@ struct gitmod_info {
 	int gid; // provided by fuse
 	int uid; // provided by fuse
 	gitmod_locker * lock;
+	gitmod_root_tree_monitor * root_tree_monitor;
+	int fix; // use to not track changes in root tree
 } gitmod_info;
 
 enum gitmod_object_type {
