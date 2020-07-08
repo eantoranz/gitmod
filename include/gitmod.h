@@ -10,8 +10,6 @@
 #include "lock.h"
 #include "root_tree.h"
 
-#define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
-
 struct gitmod_info {
 	git_repository * repo;
 	const char * treeish; // treeish that is asked to track
@@ -20,10 +18,6 @@ struct gitmod_info {
 	int gid; // provided by fuse
 	int uid; // provided by fuse
 	gitmod_locker * lock;
-	pthread_t root_tree_monitor;
-	int run_root_tree_monitor;
-	int root_tree_monitor_running;
-	int root_tree_monitor_delay; // delay in milliseconds (0 means it's a tight loop). Default will be set to 100
 } gitmod_info;
 
 enum gitmod_object_type {
