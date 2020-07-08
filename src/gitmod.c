@@ -73,7 +73,6 @@ static git_tree * gitmod_get_root_tree(int check_type) {
 		gitmod_info.treeish_type = object_type;
 	}
 	
-	printf("Successfully parsed treeish %s\n", gitmod_info.treeish);
 	switch(gitmod_info.treeish_type) {
 	case GIT_OBJ_TREE:
 		root_tree = (git_tree *) treeish;

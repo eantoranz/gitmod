@@ -20,6 +20,7 @@ static struct options {
 	const char *treeish; // treeish to use
 	const int allow_exec; // allow exec bit for files (default: 0)
 	int show_help;
+	int debug;
 } options;
 
 #define OPTION(t, p) \
@@ -30,6 +31,7 @@ static const struct fuse_opt option_spec[] = {
 	OPTION("--treeish=%s", treeish),
 	OPTION("--allow-exec", allow_exec),
 	OPTION("-x", allow_exec),
+	OPTION("--debug", debug),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
 	FUSE_OPT_END
@@ -39,7 +41,8 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn,
                         struct fuse_config *cfg)
 {
         (void) conn;
-	printf("Running gitmod_init(...)\n");
+	if (options.debug)
+		printf("Running gitmod_init(...)\n");
 	cfg->kernel_cache = 0; // TODO can use cache if working from a revision or tags (cause they are not _supposed_ to move, right?)
         gitmod_info.uid = cfg->set_uid;
 	gitmod_info.gid = cfg->set_gid;
@@ -53,7 +56,8 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
         int res = 0;
 
 
-	printf("Running gitmod_getattr(\"%s\", ...)\n", path);
+	if (options.debug)
+		printf("Running gitmod_getattr(\"%s\", ...)\n", path);
 
 	gitmod_object * object = gitmod_get_object(path, 1);
 	if (!object) {
@@ -91,7 +95,8 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
         (void) fi;
         (void) flags;
 
-	printf("Running gitmod_readdir(\"%s\", ...)\n", path);
+	if (options.debug)
+		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
 	gitmod_object * dir_node = gitmod_get_object(path, 0);
         if (!dir_node || gitmod_get_type(dir_node) != GITFS_TREE) {
@@ -160,7 +165,8 @@ static int gitmod_fs_release(const char * path, struct fuse_file_info *fi)
 
 static void gitmod_fs_destroy()
 {
-	printf("Running gitmod_destroy()\n");
+	if (options.debug)
+		printf("Running gitmod_destroy()\n");
 	gitmod_shutdown();
 
 }
@@ -187,6 +193,7 @@ static void show_help(const char *progname)
 	       "                        (default: HEAD)\n"
                "    -x   --allow-exec   Allow execution flag on files\n"
                "                        (default: no)\n"
+               "    --debug             Show some debugging messages\n"
                "\n");
 }
 
