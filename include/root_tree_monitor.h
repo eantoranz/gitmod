@@ -22,6 +22,8 @@ typedef struct {
  */
 gitmod_root_tree_monitor * gitmod_root_tree_monitor_create(void (*task)());
 
+void gitmod_root_tree_monitor_set_delay(gitmod_root_tree_monitor * monitor, int delay);
+
 void gitmod_root_tree_monitor_release(gitmod_root_tree_monitor *);
 
 

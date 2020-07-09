@@ -26,9 +26,8 @@ It supports the standard options provided by fuse.
 It also provides a few more options
 --treeish: use to specify which treeish to track (branch/tag/revision). Default is HEAD
 --repo: use to specify which repo to expose contents from. Default: ./
--x: allow execution bit for files (by default this is disabled)
 
-Check details with ./gitmod -h
+Check more options and details with ./gitmod -h
 
 
 IMPORTANT:

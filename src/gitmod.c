@@ -136,6 +136,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 		gitmod_info.root_tree_monitor = gitmod_root_tree_monitor_create(gitmod_root_tree_monitor_task);
 		if (!gitmod_info.root_tree_monitor)
 			fprintf(stderr, "Could not create root tree monitor. Will be fixed on the starting root tree\n");
+		gitmod_root_tree_monitor_set_delay(gitmod_info.root_tree_monitor, gitmod_info.root_tree_delay);
 	} else
 		printf("Root tree will be fixed\n");
 end:

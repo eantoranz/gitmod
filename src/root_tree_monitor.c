@@ -34,6 +34,11 @@ gitmod_root_tree_monitor * gitmod_root_tree_monitor_create(void (*task)())
 	return monitor;
 }
 
+void gitmod_root_tree_monitor_set_delay(gitmod_root_tree_monitor * monitor, int delay)
+{
+	monitor->delay = delay;
+}
+
 void gitmod_root_tree_monitor_release(gitmod_root_tree_monitor * monitor)
 {
 	if (monitor) {
