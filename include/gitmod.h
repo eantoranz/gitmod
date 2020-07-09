@@ -3,18 +3,25 @@
  * Released under the terms of GPLv2
  */
 
-#ifndef GITFS_H
-#define GITFS_H
+#ifndef GITMOD_H
+#define GITMOD_H
 
 #include <git2.h>
+#include "lock.h"
+#include "root_tree.h"
+#include "root_tree_monitor.h"
 
 struct gitmod_info {
 	git_repository * repo;
 	const char * treeish; // treeish that is asked to track
 	git_otype treeish_type;
+	gitmod_root_tree * root_tree;
 	int gid; // provided by fuse
 	int uid; // provided by fuse
-	time_t time; // time associated to the revision
+	gitmod_locker * lock;
+	gitmod_root_tree_monitor * root_tree_monitor;
+	int root_tree_delay; // in milliseconds (0 is a tight loop)
+	int fix; // use to not track changes in root tree
 } gitmod_info;
 
 enum gitmod_object_type {

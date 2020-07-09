@@ -19,6 +19,8 @@ static struct options {
 	const char *repo_path; // path to git repo,
 	const char *treeish; // treeish to use
 	const int allow_exec; // allow exec bit for files (default: 0)
+	const int fix; // do not track changes of references
+	int root_tree_delay; // in milliseconds (default: 100)
 	int show_help;
 	int debug;
 } options;
@@ -31,6 +33,8 @@ static const struct fuse_opt option_spec[] = {
 	OPTION("--treeish=%s", treeish),
 	OPTION("--allow-exec", allow_exec),
 	OPTION("-x", allow_exec),
+	OPTION("--refresh-delay=%d", root_tree_delay),
+	OPTION("--fix", fix),
 	OPTION("--debug", debug),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
@@ -43,7 +47,7 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn,
         (void) conn;
 	if (options.debug)
 		printf("Running gitmod_init(...)\n");
-	cfg->kernel_cache = 0; // TODO can use cache if working from a revision or tags (cause they are not _supposed_ to move, right?)
+	cfg->kernel_cache = options.fix;
         gitmod_info.uid = cfg->set_uid;
 	gitmod_info.gid = cfg->set_gid;
         return NULL;
@@ -66,9 +70,9 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	}
 
         memset(stbuf, 0, sizeof(struct stat));
-	stbuf->st_atime = gitmod_info.time;
-	stbuf->st_ctime = gitmod_info.time;
-	stbuf->st_mtime = gitmod_info.time;
+	stbuf->st_atime = gitmod_info.root_tree->time;
+	stbuf->st_ctime = gitmod_info.root_tree->time;
+	stbuf->st_mtime = gitmod_info.root_tree->time;
 	stbuf->st_uid = gitmod_info.uid;
 	stbuf->st_gid = gitmod_info.gid;
 	stbuf->st_nlink = gitmod_get_num_entries(object);
@@ -186,14 +190,18 @@ static void show_help(const char *progname)
 {
         printf("usage: %s [options] <mountpoint>\n\n", progname);
         printf("File-system specific options:\n"
-               "    --repo=<s>          Path to the git repo\n"
-               "                        (default: \".\", current directory)\n"
-	       "    --treeish=<s>       Treeish to use on the root of the mount point\n"
-	       "                        It can be a branch, a revision or a tag.\n"
-	       "                        (default: HEAD)\n"
-               "    -x   --allow-exec   Allow execution flag on files\n"
-               "                        (default: no)\n"
-               "    --debug             Show some debugging messages\n"
+               "    --repo=<s>             Path to the git repo\n"
+               "                           (default: \".\", current directory)\n"
+	       "    --treeish=<s>          Treeish to use on the root of the mount point\n"
+	       "                           It can be a branch, a revision or a tag.\n"
+	       "                           (default: HEAD)\n"
+               "    -x   --allow-exec      Allow execution flag on files\n"
+               "                           (default: no)\n"
+	       "    --fix                  Do not track changes in references.\n"
+	       "                           Useful if using a tag\n"
+	       "    --refresh-delay=<d>    Milliseconds between checks for movement of reference\n"
+	       "                           (default: 100 milliseconds. 0 means it's a tight loop)\n"
+               "    --debug                Show some debugging messages\n"
                "\n");
 }
 
@@ -207,6 +215,7 @@ int main(int argc, char *argv[])
            values are specified */
         options.repo_path = strdup(".");
 	options.treeish = strdup("HEAD");
+	options.root_tree_delay = ROOT_TREEE_MONITOR_DEFAULT_DELAY;
 
         /* Parse options */
         if (fuse_opt_parse(&args, &options, option_spec, NULL) == -1)
@@ -222,6 +231,8 @@ int main(int argc, char *argv[])
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
         } else {
+		gitmod_info.fix = options.fix;
+		gitmod_info.root_tree_delay = options.root_tree_delay;
 		ret = gitmod_init(options.repo_path, options.treeish);
 
 		if (ret)
