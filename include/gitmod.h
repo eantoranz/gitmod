@@ -7,6 +7,7 @@
 #define GITMOD_H
 
 #include <git2.h>
+#include "object.h"
 #include "lock.h"
 #include "root_tree.h"
 #include "thread.h"
@@ -23,22 +24,6 @@ struct gitmod_info {
 	int root_tree_delay; // in milliseconds (0 is a tight loop)
 	int fix; // use to not track changes in root tree
 } gitmod_info;
-
-enum gitmod_object_type {
-	GITFS_UNKNOWN,
-	GITFS_TREE,
-	GITFS_BLOB
-};
-
-typedef struct {
-	git_tree * tree;
-	git_blob * blob;
-	char * name; // local name, _not_ fullpath
-	char * path; // full path
-	int mode;
-} gitmod_object;
-
-void gitmod_dispose(gitmod_object * object);
 
 /**
  * Initialize everything

@@ -15,8 +15,6 @@
 #include "root_tree.h"
 #include "thread.h"
 
-static void gitmod_root_tree_monitor_task();
-
 static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
 	git_object * target;
@@ -106,6 +104,8 @@ end:
 	return root_tree_node;
 }
 
+static void gitmod_root_tree_monitor_task();
+
 int gitmod_init(const char * repo_path, const char * treeish)
 {
 	int ret;
@@ -142,19 +142,6 @@ end:
 	return ret;
 }
 
-void gitmod_dispose(gitmod_object * object)
-{
-	if (object->blob)
-		git_blob_free(object->blob);
-	if (object->name)
-		free(object->name);
-	if (object->path)
-		free(object->path);
-
-	// finally
-	free(object);
-}
-
 static gitmod_object * gitmod_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
 {
 	gitmod_object * object = calloc(1, sizeof(gitmod_object));
@@ -176,16 +163,9 @@ static gitmod_object * gitmod_get_object_from_git_tree_entry(git_tree_entry * gi
 	default:
 		ret = -ENOENT;
 	}
-	if (ret) {
-		gitmod_dispose(object);
-		object = NULL;
-	}
+	if (ret)
+		gitmod_object_dispose(&object);
 	return object;
-}
-
-int gitmod_get_mode(gitmod_object * object)
-{
-	return object->mode;
 }
 
 gitmod_object * gitmod_get_object(const char *path, int pull_mode)
@@ -231,47 +211,6 @@ end:
 	return object;
 }
 
-enum gitmod_object_type gitmod_get_type(gitmod_object * object) {
-	if (object->tree) {
-		return GITFS_TREE;
-	}
-	if (object->blob) {
-		return GITFS_BLOB;
-	}
-	return GITFS_UNKNOWN;
-}
-
-int gitmod_get_num_entries(gitmod_object * object)
-{
-	enum gitmod_object_type type = gitmod_get_type(object);
-	int res;
-	switch (type) {
-	case GITFS_BLOB:
-		res = 1;
-		break;
-	case GITFS_TREE:
-		res = git_tree_entrycount(object->tree);
-		break;
-	default:
-		res = -ENOENT;
-	}
-	return res;
-}
-
-int gitmod_get_size(gitmod_object * object)
-{
-	int res;
-	
-	if (object->blob)
-		res = git_blob_rawsize(object->blob);
-	else if (object->tree)
-		res = gitmod_get_num_entries(object);
-	else
-		res = -ENOENT;
-	
-	return res;
-}
-
 gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode)
 {
 	if (!tree->tree)
@@ -290,18 +229,6 @@ gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_
 	// TODO get full path
 	
 	return entry;
-}
-
-char * gitmod_get_name(gitmod_object * object)
-{
-	return object->name;
-}
-
-const char * gitmod_get_content(gitmod_object * object)
-{
-	if (!object->blob)
-		return NULL;
-	return git_blob_rawcontent(object->blob);
 }
 
 void gitmod_shutdown()

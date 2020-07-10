@@ -5,6 +5,7 @@
  * Suite 1
  */
 
+#include "object.h"
 #include "gitmod.h"
 #include <stdio.h>
 #include <string.h>
@@ -27,9 +28,9 @@ static void suite1_testGetRootTree()
 	gitmod_object * root_tree = gitmod_get_object("/", 1);
 	CU_ASSERT(root_tree != NULL);
 	if (root_tree) {
-		CU_ASSERT(gitmod_get_mode(root_tree) == 0555);
-		CU_ASSERT(gitmod_get_type(root_tree) == GITFS_TREE);
-		int num_items = gitmod_get_num_entries(root_tree);
+		CU_ASSERT(gitmod_object_get_mode(root_tree) == 0555);
+		CU_ASSERT(gitmod_object_get_type(root_tree) == GITMOD_OBJECT_TREE);
+		int num_items = gitmod_object_get_num_entries(root_tree);
 		CU_ASSERT(num_items == 5);
 
 		// let's check the names of each one of the entries
@@ -38,7 +39,7 @@ static void suite1_testGetRootTree()
 			entry = gitmod_get_tree_entry(root_tree, i, 1);
 			CU_ASSERT(entry != NULL);
 			if (entry) {
-				char * name = gitmod_get_name(entry);
+				char * name = gitmod_object_get_name(entry);
 				int expected_items;
 				int expected_size;
 				int expected_mode;
@@ -47,63 +48,63 @@ static void suite1_testGetRootTree()
 					case 0:
 						name = ".gitignore";
 						expected_items = 1;
-						expected_type = GITFS_BLOB;
+						expected_type = GITMOD_OBJECT_BLOB;
 						expected_size = 17;
 						expected_mode = 0444;
 						break;
 					case 1:
 						name = "build.sh";
 						expected_items = 1;
-						expected_type = GITFS_BLOB;
+						expected_type = GITMOD_OBJECT_BLOB;
 						expected_size = 274;
 						expected_mode = 0555;
 						break;
 					case 2:
 						name = "gitfs.c";
 						expected_items = 1;
-						expected_type = GITFS_BLOB;
+						expected_type = GITMOD_OBJECT_BLOB;
 						expected_size = 4672;
 						expected_mode = 0444;
 						break;
 					case 3:
 						name = "include";
 						expected_items = 2;
-						expected_type = GITFS_TREE;
+						expected_type = GITMOD_OBJECT_TREE;
 						expected_size = 2;
 						expected_mode = 0;
 						break;
 					case 4:
 						name = "tests";
 						expected_items = 1;
-						expected_type = GITFS_TREE;
+						expected_type = GITMOD_OBJECT_TREE;
 						expected_size = 1;
 						expected_mode = 0;
 						break;
 					default:
 						name = "***unknown item.... need to add more values***";
-						expected_type = GITFS_UNKNOWN;
+						expected_type = GITMOD_OBJECT_UNKNOWN;
 						expected_items = -ENOENT;
 						expected_size = -765;
 						expected_mode = 0;
 				}
-				int res = strcmp(name, gitmod_get_name(entry));
+				int res = strcmp(name, gitmod_object_get_name(entry));
 				CU_ASSERT(!res);
 				if (res)
-					fprintf(stderr, "Item %d: Was expecting item to be named %s but got %s\n", i, name, gitmod_get_name(entry));
-				CU_ASSERT(gitmod_get_num_entries(entry) == expected_items);
-				CU_ASSERT(gitmod_get_type(entry) == expected_type);
-				CU_ASSERT(gitmod_get_size(entry) == expected_size);
-				CU_ASSERT(gitmod_get_mode(entry) == expected_mode);
-				if (gitmod_get_mode(entry) != expected_mode) {
-					fprintf(stderr, "Mode for %s was %o but %o was expected\n", name, gitmod_get_mode(entry), expected_mode);
+					fprintf(stderr, "Item %d: Was expecting item to be named %s but got %s\n", i, name, gitmod_object_get_name(entry));
+				CU_ASSERT(gitmod_object_get_num_entries(entry) == expected_items);
+				CU_ASSERT(gitmod_object_get_type(entry) == expected_type);
+				CU_ASSERT(gitmod_object_get_size(entry) == expected_size);
+				CU_ASSERT(gitmod_object_get_mode(entry) == expected_mode);
+				if (gitmod_object_get_mode(entry) != expected_mode) {
+					fprintf(stderr, "Mode for %s was %o but %o was expected\n", name, gitmod_object_get_mode(entry), expected_mode);
 				}
-				gitmod_dispose(entry);
+				gitmod_object_dispose(&entry);
 			}
 		}
 		// if we go over the board, we get NULL
 		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999, 0) == NULL);
 
-		gitmod_dispose(root_tree);
+		gitmod_object_dispose(&root_tree);
 	}
 }
 
@@ -112,19 +113,19 @@ static void suite1_testGetObjectByPathBlob()
 	gitmod_object * object = gitmod_get_object("/tests/test.c", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_get_type(object) == GITFS_BLOB);
-		CU_ASSERT(gitmod_get_num_entries(object) == 1);
-		long size = gitmod_get_size(object);
+		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
+		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
+		long size = gitmod_object_get_size(object);
 		CU_ASSERT(size == 2078);
-		const char * content = gitmod_get_content(object);
+		const char * content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
 			char * dest = malloc(10);
 			strncpy(dest, content, 9);
 			CU_ASSERT(strcmp(dest, "/*\n * Cop") == 0);
 		}
-		CU_ASSERT(gitmod_get_mode(object) == 0444);
-		gitmod_dispose(object);
+		CU_ASSERT(gitmod_object_get_mode(object) == 0444);
+		gitmod_object_dispose(&object);
 	}
 }
 
@@ -133,19 +134,19 @@ static void suite1_testGetExecObjectByPathBlob()
 	gitmod_object * object = gitmod_get_object("/build.sh", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_get_type(object) == GITFS_BLOB);
-		CU_ASSERT(gitmod_get_num_entries(object) == 1);
-		long size = gitmod_get_size(object);
+		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
+		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
+		long size = gitmod_object_get_size(object);
 		CU_ASSERT(size == 274);
-		const char * content = gitmod_get_content(object);
+		const char * content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
 			char * dest = malloc(10);
 			strncpy(dest, content, 9);
 			CU_ASSERT(strcmp(dest, "#!/bin/ba") == 0);
 		}
-		CU_ASSERT(gitmod_get_mode(object) == 0555);
-		gitmod_dispose(object);
+		CU_ASSERT(gitmod_object_get_mode(object) == 0555);
+		gitmod_object_dispose(&object);
 	}
 }
 
@@ -154,12 +155,12 @@ static void suite1_testGetObjectByPathTree()
 	gitmod_object * object = gitmod_get_object("tests", 1);
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_get_type(object) == GITFS_TREE);
-		int tree_entries = gitmod_get_num_entries(object);
+		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
+		int tree_entries = gitmod_object_get_num_entries(object);
 		CU_ASSERT(tree_entries == 1);
-		CU_ASSERT(gitmod_get_content(object) == NULL);
-		CU_ASSERT(gitmod_get_mode(object) == 0);
-		gitmod_dispose(object);
+		CU_ASSERT(gitmod_object_get_content(object) == NULL);
+		CU_ASSERT(gitmod_object_get_mode(object) == 0);
+		gitmod_object_dispose(&object);
 	}
 }
 
@@ -168,12 +169,12 @@ static void suite1_testGetObjectByPathTreeWithoutMode()
 	gitmod_object * object = gitmod_get_object("tests", 0);
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_get_type(object) == GITFS_TREE);
-		int tree_entries = gitmod_get_num_entries(object);
+		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
+		int tree_entries = gitmod_object_get_num_entries(object);
 		CU_ASSERT(tree_entries == 1);
-		CU_ASSERT(gitmod_get_content(object) == NULL);
-		CU_ASSERT(gitmod_get_mode(object) == 0);
-		gitmod_dispose(object);
+		CU_ASSERT(gitmod_object_get_content(object) == NULL);
+		CU_ASSERT(gitmod_object_get_mode(object) == 0);
+		gitmod_object_dispose(&object);
 	}
 }
 

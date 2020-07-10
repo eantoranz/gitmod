@@ -6,6 +6,7 @@
  *  Make sure of the kinds of objects we can use as treeish
  */
 
+#include "object.h"
 #include "gitmod.h"
 #include <CUnit/Basic.h>
 
@@ -21,8 +22,8 @@ static void suite2_treeish_is_tree()
 		gitmod_object * tree = gitmod_get_object("/", 0);
 		CU_ASSERT(tree != NULL);
 		if (tree) {
-			CU_ASSERT(gitmod_get_num_entries(tree) == 6);
-			gitmod_dispose(tree);
+			CU_ASSERT(gitmod_object_get_num_entries(tree) == 6);
+			gitmod_object_dispose(&tree);
 		}
 		// In case this worked, so that we can run other tests
 		gitmod_shutdown();

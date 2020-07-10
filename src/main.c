@@ -5,7 +5,6 @@
 
 #define FUSE_USE_VERSION 35
 
-#include "gitmod.h"
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
@@ -14,6 +13,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <fuse.h>
+#include "object.h"
+#include "gitmod.h"
 
 static struct options {
 	const char *repo_path; // path to git repo,
@@ -75,18 +76,18 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	stbuf->st_mtime = gitmod_info.root_tree->time;
 	stbuf->st_uid = gitmod_info.uid;
 	stbuf->st_gid = gitmod_info.gid;
-	stbuf->st_nlink = gitmod_get_num_entries(object);
-	enum gitmod_object_type object_type = gitmod_get_type(object);
-        if (object_type == GITFS_TREE) { // this will depend on the type of object
+	stbuf->st_nlink = gitmod_object_get_num_entries(object);
+	enum gitmod_object_type object_type = gitmod_object_get_type(object);
+        if (object_type == GITMOD_OBJECT_TREE) { // this will depend on the type of object
                 stbuf->st_mode = S_IFDIR | 0555; // mode is always 0 for trees
 		stbuf->st_nlink+=2;
-	} else if (object_type == GITFS_BLOB){
+	} else if (object_type == GITMOD_OBJECT_BLOB){
 		stbuf->st_mode = S_IFREG |
-				 (gitmod_get_mode(object) & (options.allow_exec ? 0777 : 0666));
-		stbuf->st_size = gitmod_get_size(object);
+				 (gitmod_object_get_mode(object) & (options.allow_exec ? 0777 : 0666));
+		stbuf->st_size = gitmod_object_get_size(object);
 	} else
 		res = -ENOENT;
-	gitmod_dispose(object);
+	gitmod_object_dispose(&object);
 
         return res;
 }
@@ -103,27 +104,27 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
 	gitmod_object * dir_node = gitmod_get_object(path, 0);
-        if (!dir_node || gitmod_get_type(dir_node) != GITFS_TREE) {
+        if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
 		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
-			gitmod_dispose(dir_node);
+			gitmod_object_dispose(&dir_node);
                 return -ENOENT;
 	}
 
 	filler(buf, ".", NULL, 0, 0);
 	filler(buf, "..", NULL, 0, 0);
-	int num_items = gitmod_get_num_entries(dir_node);
+	int num_items = gitmod_object_get_num_entries(dir_node);
 	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
 		entry = gitmod_get_tree_entry(dir_node, i, 0);
 		if (entry) {
-			char * name = gitmod_get_name(entry);
+			char * name = gitmod_object_get_name(entry);
 			if (name)
 				filler(buf, name, NULL, 0, 0);
-			gitmod_dispose(entry);
+			gitmod_object_dispose(&entry);
 		}
 	}
-	gitmod_dispose(dir_node);
+	gitmod_object_dispose(&dir_node);
 
         return 0;
 }
@@ -132,10 +133,10 @@ static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
 	gitmod_object * object = gitmod_get_object(path, 0);
-	if (!object || gitmod_get_type(object) != GITFS_BLOB) {
+	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
 		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
-			gitmod_dispose(object);
+			gitmod_object_dispose(&object);
 		ret = -ENOENT;
 	} else
 		fi->fh = (uint64_t) object;
@@ -149,8 +150,8 @@ static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset
         (void) fi;
 	gitmod_object * object = (gitmod_object *) fi->fh;
 	
-	len = gitmod_get_size(object);
-	const char * contents = gitmod_get_content(object);
+	len = gitmod_object_get_size(object);
+	const char * contents = gitmod_object_get_content(object);
         if (offset < len) {
                 if (offset + size > len)
                         size = len - offset;
@@ -163,7 +164,8 @@ static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset
 
 static int gitmod_fs_release(const char * path, struct fuse_file_info *fi)
 {
-	gitmod_dispose((gitmod_object *) fi->fh);
+	gitmod_object * object = (gitmod_object *) fi->fh; 
+	gitmod_object_dispose(&object);
 	return 0;
 }
 

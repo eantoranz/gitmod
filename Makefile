@@ -7,6 +7,9 @@ CFLAGSTEST=-lcunit -Itests
 
 default: gitmod test
 
+object.o: src/object.c
+	$(CC) -c -o object.o $< $(CFLAGS)
+
 root_tree.o: src/root_tree.c
 	$(CC) -c -o root_tree.o $< $(CFLAGS)
 
@@ -16,7 +19,7 @@ thread.o: src/thread.c
 lock.o: src/lock.c
 	$(CC) -c -o lock.o $< $(CFLAGS)
 
-gitmod.o: src/gitmod.c lock.o root_tree.o thread.o 
+gitmod.o: src/gitmod.c lock.o root_tree.o thread.o object.o
 	$(CC) -c -o gitmod.o $< $(CFLAGS)
 
 gitmod: src/main.c gitmod.o
