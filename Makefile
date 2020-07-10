@@ -10,13 +10,13 @@ default: gitmod test
 root_tree.o: src/root_tree.c
 	$(CC) -c -o root_tree.o $< $(CFLAGS)
 
-root_tree_monitor.o: src/root_tree_monitor.c
-	$(CC) -c -o root_tree_monitor.o $< $(CFLAGS)
+thread.o: src/thread.c
+	$(CC) -c -o thread.o $< $(CFLAGS)
 
 lock.o: src/lock.c
 	$(CC) -c -o lock.o $< $(CFLAGS)
 
-gitmod.o: src/gitmod.c lock.o root_tree.o root_tree_monitor.o 
+gitmod.o: src/gitmod.c lock.o root_tree.o thread.o 
 	$(CC) -c -o gitmod.o $< $(CFLAGS)
 
 gitmod: src/main.c gitmod.o

@@ -13,7 +13,7 @@
 #include "gitmod.h"
 #include "lock.h"
 #include "root_tree.h"
-#include "root_tree_monitor.h"
+#include "thread.h"
 
 static void gitmod_root_tree_monitor_task();
 
@@ -133,10 +133,9 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	gitmod_info.root_tree = root_tree;
 	gitmod_info.lock = gitmod_locker_create();
 	if (!gitmod_info.fix) {
-		gitmod_info.root_tree_monitor = gitmod_root_tree_monitor_create(gitmod_root_tree_monitor_task);
+		gitmod_info.root_tree_monitor = gitmod_thread_create(gitmod_root_tree_monitor_task, gitmod_info.root_tree_delay);
 		if (!gitmod_info.root_tree_monitor)
 			fprintf(stderr, "Could not create root tree monitor. Will be fixed on the starting root tree\n");
-		gitmod_root_tree_monitor_set_delay(gitmod_info.root_tree_monitor, gitmod_info.root_tree_delay);
 	} else
 		printf("Root tree will be fixed\n");
 end:
@@ -308,7 +307,7 @@ const char * gitmod_get_content(gitmod_object * object)
 void gitmod_shutdown()
 {
 	if (gitmod_info.root_tree_monitor)
-		gitmod_root_tree_monitor_release(gitmod_info.root_tree_monitor);
+		gitmod_thread_release(&gitmod_info.root_tree_monitor);
 	gitmod_info.root_tree_monitor = NULL;
 	git_repository_free(gitmod_info.repo);
 	if (gitmod_info.lock)

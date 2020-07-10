@@ -9,6 +9,8 @@
 #include <git2.h>
 #include "lock.h"
 
+#define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
+
 typedef struct {
 	git_tree * tree;
 	time_t time;
