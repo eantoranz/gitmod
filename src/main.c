@@ -3,7 +3,7 @@
  * Released under the terms of GPLv2
  */
 
-#define FUSE_USE_VERSION 31
+#define FUSE_USE_VERSION 35
 
 #include "gitmod.h"
 #include <assert.h>
