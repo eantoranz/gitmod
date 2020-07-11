@@ -131,8 +131,12 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
 	
 	gitmod_info.root_tree = root_tree;
-	gitmod_info.lock = gitmod_locker_create();
 	if (!gitmod_info.fix) {
+		gitmod_info.lock = gitmod_locker_create();
+		if (!gitmod_info.lock) {
+			fprintf(stderr, "Could not create lock for root tree (ran out of memory?)\n");
+			return -ENOMEM;
+		}
 		gitmod_info.root_tree_monitor = gitmod_thread_create(gitmod_root_tree_monitor_task, gitmod_info.root_tree_delay);
 		if (!gitmod_info.root_tree_monitor)
 			fprintf(stderr, "Could not create root tree monitor. Will be fixed on the starting root tree\n");
@@ -238,7 +242,7 @@ void gitmod_shutdown()
 	gitmod_info.root_tree_monitor = NULL;
 	git_repository_free(gitmod_info.repo);
 	if (gitmod_info.lock)
-		gitmod_locker_destroy(gitmod_info.lock);
+		gitmod_locker_destroy(&gitmod_info.lock);
 	// going out, for the time being
 	git_libgit2_shutdown();
 }
