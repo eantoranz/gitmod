@@ -19,6 +19,8 @@ typedef struct {
 	int marked_for_deletion;
 } gitmod_root_tree;
 
+gitmod_root_tree * gitmod_root_tree_create();
+
 void gitmod_root_tree_dispose(gitmod_root_tree ** root_tree);
 
 void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree);

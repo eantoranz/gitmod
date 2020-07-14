@@ -6,6 +6,23 @@
 #include "root_tree.h"
 #include "lock.h"
 
+gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time)
+{
+	gitmod_root_tree * root_tree;
+	root_tree = calloc(1, sizeof(gitmod_root_tree));
+	if (root_tree) {
+		root_tree->lock = gitmod_locker_create();
+		if (root_tree->lock) {
+			root_tree->tree = tree;
+			root_tree->time = revision_time;
+		} else {
+			free(root_tree);
+			root_tree = NULL;
+		}
+	}
+	return root_tree;
+}
+
 void gitmod_root_tree_dispose(gitmod_root_tree ** root_tree)
 {
 	if (!(root_tree && *root_tree))

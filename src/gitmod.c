@@ -99,10 +99,9 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 	}
 end:
 	if (root_tree) {
-		root_tree_node = calloc(1, sizeof(gitmod_root_tree));
-		root_tree_node->tree = root_tree;
-		root_tree_node->time = revision_time;
-		root_tree_node->lock = gitmod_locker_create();
+		root_tree_node = gitmod_root_tree_create(root_tree, revision_time);
+		if (!root_tree_node)
+			fprintf(stderr, "Could not create a gitmod root tree instance for git's root tree\n");
 	}
 	if (gitmod_info.treeish_type != GIT2_OBJECT_TREE)
 		git_object_free(treeish);
