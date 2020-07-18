@@ -8,6 +8,7 @@
 
 #include <git2.h>
 #include "lock.h"
+#include "object.h"
 
 #define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
 
@@ -30,6 +31,11 @@ void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree);
  * If the root_tree has been set for deletion _and_ the counter reached 0 on this call, we will free it
  */
 void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree);
+
+/**
+ * When we call this method, it is assumed the its usage counter has already been increased
+ */
+gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * tree, const char * path, int pull_mode);
 
 #endif
 

@@ -3,6 +3,8 @@
  * Released under the terms of GPLv2
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "root_tree.h"
 #include "lock.h"
 
@@ -56,3 +58,38 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	}
 }
 
+gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * path, int pull_mode)
+{
+	int ret = 0;
+	gitmod_object * object = NULL;
+	git_tree_entry * tree_entry = NULL;
+	if (!root_tree) {
+		return NULL;
+	}
+	if (!(strlen(path) && strcmp(path, "/"))) {
+		// root tree
+		object = calloc(1, sizeof(gitmod_object));
+		object->path = strdup("/");
+		object->name = strdup("/");
+		object->tree = root_tree->tree;
+		if (pull_mode)
+			object->mode = 0555; // TODO can we get more info about what the perms are for the mount point?
+		return object;
+	}
+
+	
+	ret = git_tree_entry_bypath(&tree_entry, root_tree->tree, path + (path[0] == '/' ? 1 : 0));
+	if (ret) {
+		fprintf(stderr, "Could not find the object for the path %s\n", path);
+		tree_entry = NULL;
+		goto end;
+	}
+	
+	object = gitmod_object_get_from_git_tree_entry(tree_entry, pull_mode);
+end:
+	if (object)
+		object->path = strdup(path);
+	if (tree_entry)
+		git_tree_entry_free(tree_entry);
+	return object;
+}
