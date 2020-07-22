@@ -2,10 +2,13 @@
 # Released under the terms of GPLv2
 
 CC=gcc
-CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 --cflags --libs`
+CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
 CFLAGSTEST=-lcunit -Itests
 
 default: gitmod test
+
+cache.o: src/cache.c
+	$(CC) -c -o cache.o $< $(CFLAGS)
 
 object.o: src/object.c
 	$(CC) -c -o object.o $< $(CFLAGS)
@@ -19,7 +22,7 @@ thread.o: src/thread.c
 lock.o: src/lock.c
 	$(CC) -c -o lock.o $< $(CFLAGS)
 
-gitmod.o: src/gitmod.c lock.o root_tree.o thread.o object.o
+gitmod.o: src/gitmod.c lock.o root_tree.o thread.o object.o cache.o
 	$(CC) -c -o gitmod.o $< $(CFLAGS)
 
 gitmod: src/main.c gitmod.o
