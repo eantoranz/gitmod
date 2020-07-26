@@ -87,7 +87,7 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 		stbuf->st_size = gitmod_object_get_size(object);
 	} else
 		res = -ENOENT;
-	gitmod_object_dispose(&object);
+	gitmod_dispose_object(&object);
 
         return res;
 }
@@ -107,7 +107,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
         if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
 		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
-			gitmod_object_dispose(&dir_node);
+			gitmod_dispose_object(&dir_node);
                 return -ENOENT;
 	}
 
@@ -121,10 +121,10 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 			char * name = gitmod_object_get_name(entry);
 			if (name)
 				filler(buf, name, NULL, 0, 0);
-			gitmod_object_dispose(&entry);
+			gitmod_dispose_object(&entry);
 		}
 	}
-	gitmod_object_dispose(&dir_node);
+	gitmod_dispose_object(&dir_node);
 
         return 0;
 }
@@ -136,7 +136,7 @@ static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
 		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
-			gitmod_object_dispose(&object);
+			gitmod_dispose_object(&object);
 		ret = -ENOENT;
 	} else
 		fi->fh = (uint64_t) object;
@@ -165,7 +165,7 @@ static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset
 static int gitmod_fs_release(const char * path, struct fuse_file_info *fi)
 {
 	gitmod_object * object = (gitmod_object *) fi->fh; 
-	gitmod_object_dispose(&object);
+	gitmod_dispose_object(&object);
 	return 0;
 }
 

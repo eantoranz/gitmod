@@ -111,6 +111,7 @@ void gitmod_cache_dispose(gitmod_cache ** cache)
 {
 	if (*cache) {
 		printf("Disposing of cache\n");
+		// TODO clear up the objects in memory
 		gitmod_locker_dispose(&(*cache)->locker);
 		g_hash_table_destroy((*cache)->items); // TODO need to go through the items and dispose of them
 		free(*cache);

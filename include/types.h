@@ -8,6 +8,7 @@
 
 #include <git2.h>
 #include <pthread.h>
+#include <glib.h>
 
 enum gitmod_object_type {
 	GITMOD_OBJECT_UNKNOWN,
@@ -27,6 +28,16 @@ typedef struct {
 } gitmod_locker;
 
 typedef struct {
+	GHashTable * items;
+	gitmod_locker * locker;
+} gitmod_cache;
+
+typedef struct {
+	const void * content; // DO NOT ACCESS THIS DIRECTLY. use gitmod_cache_item_get, gitmod_cache_item_set
+	gitmod_locker * locker;
+} gitmod_cache_item;
+
+typedef struct {
 	git_tree * tree;
 	git_blob * blob;
 	char * name; // local name, _not_ fullpath
@@ -40,6 +51,7 @@ typedef struct {
 	gitmod_locker * lock;
 	int usage_counter;
 	int marked_for_deletion;
+	gitmod_cache * objects_cache; // gitmod_objects will be held by PATH
 } gitmod_root_tree;
 
 #endif

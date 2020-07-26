@@ -7,3 +7,4 @@
 
 CU_pSuite suite1_setup();
 CU_pSuite suite2_setup();
+CU_pSuite suitekim_setup();

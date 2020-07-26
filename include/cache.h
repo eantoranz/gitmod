@@ -6,18 +6,7 @@
 #ifndef GITMOD_CACHE_H
 #define GITMOD_CACHE_H
 
-#include <glib.h>
-#include "lock.h"
-
-typedef struct {
-	GHashTable * items;
-	gitmod_locker * locker;
-} gitmod_cache;
-
-typedef struct {
-	const void * content; // DO NOT ACCESS THIS DIRECTLY. use gitmod_cache_item_get, gitmod_cache_item_set
-	gitmod_locker * locker;
-} gitmod_cache_item;
+#include <types.h>
 
 gitmod_cache * gitmod_cache_create();
 

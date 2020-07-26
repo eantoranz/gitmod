@@ -10,7 +10,7 @@
 
 #define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
 
-gitmod_root_tree * gitmod_root_tree_create();
+gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time, int use_cache);
 
 void gitmod_root_tree_dispose(gitmod_root_tree ** root_tree);
 
@@ -26,6 +26,8 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree);
  * When we call this method, it is assumed the its usage counter has already been increased
  */
 gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * tree, const char * path, int pull_mode);
+
+void gitmod_root_tree_dispose_object(gitmod_root_tree * tree, gitmod_object ** object);
 
 #endif
 

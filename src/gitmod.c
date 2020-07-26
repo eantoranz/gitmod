@@ -128,7 +128,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 		return -ENOENT;
 	}
 	// need to  create a new root_tree instance
-	gitmod_root_tree * root_tree = gitmod_root_tree_create(git_root_tree, revision_time);
+	gitmod_root_tree * root_tree = gitmod_root_tree_create(git_root_tree, revision_time, gitmod_info.keep_in_memory);
 	if (!root_tree) {
 		fprintf(stderr, "Could not set up root tree instance\n");
 		return -ENOENT;
@@ -171,6 +171,15 @@ gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_
 	return gitmod_object_get_tree_entry(gitmod_info.root_tree, tree, index, pull_mode);
 }
 
+void gitmod_dispose_object(gitmod_object ** object)
+{
+	/**
+	 * TODO how can we make sure that the object is coming from this tree?
+	 * Might need to associate the object to its tree
+	 */
+	gitmod_root_tree_dispose_object(gitmod_info.root_tree, object);
+}
+
 void gitmod_shutdown()
 {
 	if (gitmod_info.root_tree_monitor)
@@ -199,7 +208,7 @@ static void gitmod_root_tree_monitor_task()
 				printf("root tree changed\n");
 				// it did change, indeed
 				// we can replace the old tree with the new one and let it run normally
-				gitmod_info.root_tree = gitmod_root_tree_create(new_tree, revision_time);
+				gitmod_info.root_tree = gitmod_root_tree_create(new_tree, revision_time, gitmod_info.keep_in_memory);
 			}
 			
 			gitmod_unlock(gitmod_info.lock); // no need to make anybody wait, the new tree can be used from now on

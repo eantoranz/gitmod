@@ -2,7 +2,7 @@
  * Copyright 2020 Edmundo Carmona Antoranz
  * Released under the terms of GPLv2
  * 
- * Suite 1
+ * Suite keep in memory
  */
 
 #include "object.h"
@@ -11,20 +11,21 @@
 #include <string.h>
 #include <CUnit/Basic.h>
 
-static int suite1_init_gitmod()
+static int suitekim_init_gitmod()
 {
+	gitmod_info.keep_in_memory = 1;
 	return gitmod_init(".", "583510cd3ae56e");
 }
 
-static void suite1_testRevisionInfo()
+static void suitekim_testRevisionInfo()
 {
 	fprintf(stderr, "Revision time: %ld\n", gitmod_info.root_tree->time);
 	CU_ASSERT(gitmod_info.root_tree->time == 1593046557);
 	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
-	CU_ASSERT(gitmod_info.root_tree->objects_cache == NULL);
+	CU_ASSERT(gitmod_info.root_tree->objects_cache != NULL);
 }
 
-static void suite1_testGetRootTree()
+static void suitekim_testGetRootTree()
 {
 	gitmod_object * root_tree = gitmod_get_object("/", 1);
 	CU_ASSERT(root_tree != NULL);
@@ -106,11 +107,11 @@ static void suite1_testGetRootTree()
 		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999, 0) == NULL);
 
 		gitmod_dispose_object(&root_tree);
-		CU_ASSERT(root_tree == NULL);
+		CU_ASSERT(root_tree != NULL);
 	}
 }
 
-static void suite1_testGetObjectByPathBlob()
+static void suitekim_testGetObjectByPathBlob()
 {
 	gitmod_object * object = gitmod_get_object("/tests/test.c", 1);
 	CU_ASSERT(object != NULL);
@@ -123,16 +124,16 @@ static void suite1_testGetObjectByPathBlob()
 		CU_ASSERT(content != NULL);
 		if (content) {
 			char * dest = calloc(1, 10);
-			strncpy(dest, content, 9);
+			memcpy(dest, content, 9);
 			CU_ASSERT(strcmp(dest, "/*\n * Cop") == 0);
 		}
 		CU_ASSERT(gitmod_object_get_mode(object) == 0444);
 		gitmod_dispose_object(&object);
-		CU_ASSERT(object == NULL);
+		CU_ASSERT(object != NULL);
 	}
 }
 
-static void suite1_testGetExecObjectByPathBlob()
+static void suitekim_testGetExecObjectByPathBlob()
 {
 	gitmod_object * object = gitmod_get_object("/build.sh", 1);
 	CU_ASSERT(object != NULL);
@@ -145,16 +146,16 @@ static void suite1_testGetExecObjectByPathBlob()
 		CU_ASSERT(content != NULL);
 		if (content) {
 			char * dest = calloc(1, 10);
-			strncpy(dest, content, 9);
+			memcpy(dest, content, 9);
 			CU_ASSERT(strcmp(dest, "#!/bin/ba") == 0);
 		}
 		CU_ASSERT(gitmod_object_get_mode(object) == 0555);
 		gitmod_dispose_object(&object);
-		CU_ASSERT(object == NULL);
+		CU_ASSERT(object != NULL);
 	}
 }
 
-static void suite1_testGetObjectByPathTree()
+static void suitekim_testGetObjectByPathTree()
 {
 	gitmod_object * object = gitmod_get_object("tests", 1);
 	CU_ASSERT(object != NULL);
@@ -165,11 +166,11 @@ static void suite1_testGetObjectByPathTree()
 		CU_ASSERT(gitmod_object_get_content(object) == NULL);
 		CU_ASSERT(gitmod_object_get_mode(object) == 0);
 		gitmod_dispose_object(&object);
-		CU_ASSERT(object == NULL);
+		CU_ASSERT(object != NULL);
 	}
 }
 
-static void suite1_testGetObjectByPathTreeWithoutMode()
+static void suitekim_testGetObjectByPathTreeWithoutMode()
 {
 	gitmod_object * object = gitmod_get_object("tests", 0);
 	CU_ASSERT(object != NULL);
@@ -180,34 +181,35 @@ static void suite1_testGetObjectByPathTreeWithoutMode()
 		CU_ASSERT(gitmod_object_get_content(object) == NULL);
 		CU_ASSERT(gitmod_object_get_mode(object) == 0);
 		gitmod_dispose_object(&object);
-		CU_ASSERT(object == NULL);
+		CU_ASSERT(object != NULL);
 	}
 }
 
-static void suite1_testGetNonExistingObjectByPath()
+static void suitekim_testGetNonExistingObjectByPath()
 {
 	gitmod_object * object = gitmod_get_object("blahblah", 1);
 	CU_ASSERT(object == NULL);
 }
 
-static int suite1_shutdown_gitmod()
+static int suitekim_shutdown_gitmod()
 {
 	gitmod_shutdown();
+	gitmod_info.keep_in_memory = 0;
 	return 0;
 }
 
-CU_pSuite suite1_setup()
+CU_pSuite suitekim_setup()
 {
-	CU_pSuite pSuite = CU_add_suite("Suite1", suite1_init_gitmod, suite1_shutdown_gitmod);
+	CU_pSuite pSuite = CU_add_suite("Suitekim", suitekim_init_gitmod, suitekim_shutdown_gitmod);
 	if (pSuite != NULL) {
 		// did work
-		if (!(CU_add_test(pSuite, "Suite1: test revision info", suite1_testRevisionInfo) &&
-			CU_add_test(pSuite, "Suite1: getRootTree", suite1_testGetRootTree) &&
-			CU_add_test(pSuite, "Suite1: getObjectByPathBlob", suite1_testGetObjectByPathBlob) &&
-			CU_add_test(pSuite, "Suite1: getExecObjectByPathBlob", suite1_testGetExecObjectByPathBlob) &&
-			CU_add_test(pSuite, "Suite1: getObjectByPathTree", suite1_testGetObjectByPathTree) &&
-			CU_add_test(pSuite, "Suite1: suite1_testGetObjectByPathTreeWithoutMode", suite1_testGetObjectByPathTreeWithoutMode) &&
-			CU_add_test(pSuite, "Suite1: getNonExisingObjectByPath", suite1_testGetNonExistingObjectByPath))
+		if (!(CU_add_test(pSuite, "Suitekim: test revision info", suitekim_testRevisionInfo) &&
+			CU_add_test(pSuite, "Suitekim: getRootTree", suitekim_testGetRootTree) &&
+			CU_add_test(pSuite, "Suitekim: getObjectByPathBlob", suitekim_testGetObjectByPathBlob) &&
+			CU_add_test(pSuite, "Suitekim: getExecObjectByPathBlob", suitekim_testGetExecObjectByPathBlob) &&
+			CU_add_test(pSuite, "Suitekim: getObjectByPathTree", suitekim_testGetObjectByPathTree) &&
+			CU_add_test(pSuite, "Suitekim: suitekim_testGetObjectByPathTreeWithoutMode", suitekim_testGetObjectByPathTreeWithoutMode) &&
+			CU_add_test(pSuite, "Suitekim: getNonExisingObjectByPath", suitekim_testGetNonExistingObjectByPath))
 		) {
 			return NULL;
 		}
