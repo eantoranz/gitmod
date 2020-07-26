@@ -129,7 +129,7 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
 	gitmod_root_tree * root_tree = gitmod_get_root_tree();
 	if (!root_tree) {
-		fprintf(stderr, "Could not open root tree for treeish");
+		fprintf(stderr, "Could not open root tree for treeish\n");
 		return -ENOENT;
 	}
 	
