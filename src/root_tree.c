@@ -6,11 +6,14 @@
 #include "root_tree.h"
 #include "lock.h"
 
-void gitmod_root_tree_dispose(gitmod_root_tree * root_tree)
+void gitmod_root_tree_dispose(gitmod_root_tree ** root_tree)
 {
-	gitmod_locker_destroy(root_tree->lock);
-	git_tree_free(root_tree->tree);
-	free(root_tree);
+	if (!(root_tree && *root_tree))
+		return;
+	gitmod_locker_destroy(&(*root_tree)->lock);
+	git_tree_free((*root_tree)->tree);
+	free(*root_tree);
+	*root_tree = NULL;
 }
 
 void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree)
@@ -32,7 +35,7 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	delete_root_tree = root_tree->marked_for_deletion && root_tree->usage_counter <= 0;
 	gitmod_unlock(root_tree->lock);
 	if (delete_root_tree) {
-		gitmod_root_tree_dispose(root_tree);
+		gitmod_root_tree_dispose(&root_tree);
 	}
 }
 

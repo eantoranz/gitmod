@@ -15,6 +15,12 @@
 #include "root_tree.h"
 #include "thread.h"
 
+#if LIBGIT2_SOVERSION < 28 // old implementation
+#define GIT2_OBJECT_TREE GIT_OBJ_TREE
+#else // new implementation
+#define GIT2_OBJECT_TREE GIT_OBJECT_TREE
+#endif
+
 static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 {
 	git_object * target;
@@ -98,7 +104,7 @@ end:
 		root_tree_node->time = revision_time;
 		root_tree_node->lock = gitmod_locker_create();
 	}
-	if (gitmod_info.treeish_type != GIT_OBJECT_TREE)
+	if (gitmod_info.treeish_type != GIT2_OBJECT_TREE)
 		git_object_free(treeish);
 	
 	return root_tree_node;
@@ -274,9 +280,9 @@ static void gitmod_root_tree_monitor_task()
 				int delete_root_tree = old_tree->usage_counter == 0;
 				gitmod_unlock(old_tree->lock);
 				if (delete_root_tree)
-				gitmod_root_tree_dispose(old_tree);
+				gitmod_root_tree_dispose(&old_tree);
 			}
 		} else
-			gitmod_root_tree_dispose(new_tree);
+			gitmod_root_tree_dispose(&new_tree);
 	}
 }
