@@ -180,6 +180,7 @@ void gitmod_shutdown()
 
 static void gitmod_root_tree_monitor_task()
 {
+	// TODO avoid using this function to know if treeish has moved because it does other unintended things like creating a cache
 	gitmod_root_tree * new_tree = gitmod_get_root_tree();
 	if (new_tree) {
 		if (git_oid_cmp(git_tree_id(gitmod_info.root_tree->tree), git_tree_id(new_tree->tree))) {
