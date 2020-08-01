@@ -215,7 +215,7 @@ static void gitmod_root_tree_monitor_task()
 			
 			if (old_tree->tree != new_tree) {
 				gitmod_lock(old_tree->lock);
-				// set if for deletion right away
+				// set it for deletion right away
 				old_tree->marked_for_deletion = 1;
 				int delete_root_tree = old_tree->usage_counter == 0;
 				gitmod_unlock(old_tree->lock);

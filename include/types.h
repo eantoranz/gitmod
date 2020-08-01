@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
 	GHashTable * items;
 	gitmod_locker * locker;
+	int fixed; // no more items will be added. If asking for a key and it doesn't exist, will return NULL
 } gitmod_cache;
 
 typedef struct {

@@ -12,14 +12,35 @@
 #include "gitmod.h"
 #include "cache.h"
 
+static int gitmod_tree_walk(const char *root, const git_tree_entry *entry, void *payload)
+{
+	if (!payload)
+		return -1; // stop the walk
+	gitmod_cache * cache = payload;
+	const char * entry_name = git_tree_entry_name(entry);
+	char * path = calloc(1, 1 + strlen(root) + strlen(entry_name) + 1);
+	strcat(path, "/");
+	strcat(path, root);
+	strcat(path, entry_name);
+	gitmod_cache_get(cache, path); //map the path to an object
+	free(path);
+	return 0;
+}
+
 gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time, int use_cache)
 {
 	gitmod_root_tree * root_tree;
 	root_tree = calloc(1, sizeof(gitmod_root_tree));
 	if (root_tree) {
 		root_tree->lock = gitmod_locker_create();
-		if (root_tree->lock && use_cache)
+		if (root_tree->lock && use_cache) {
 			root_tree->objects_cache = gitmod_cache_create();
+			// do a walk so that we set all paths right now
+			git_tree_walk(tree, GIT_TREEWALK_PRE, gitmod_tree_walk, root_tree->objects_cache);
+			// make sure that the root path is associated cause it's not included in the tree walk
+			gitmod_cache_get(root_tree->objects_cache, "/");
+			gitmod_cache_set_fixed(root_tree->objects_cache, 1);
+		}
 		if (root_tree->lock && (!use_cache || root_tree->objects_cache)) {
 			root_tree->tree = tree;
 			root_tree->time = revision_time;
@@ -95,7 +116,7 @@ static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_
 	return object;
 }
 
-gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * path, int pull_mode)
+gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * orig_path, int pull_mode)
 {
 	int ret = 0;
 	gitmod_object * object = NULL;
@@ -103,13 +124,26 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 	if (!root_tree) {
 		return NULL;
 	}
+	char * path;
+	if (strlen(orig_path) > 0 && orig_path[0] == '/')
+		path = (char *) orig_path;
+	else {
+		path = calloc(1, 1 + strlen(orig_path) + 1);
+		strcpy(path, "/");
+		strcat(path, orig_path);
+	}
 	// is the object in memory already?
 	gitmod_cache_item * cached_item = NULL;
 	if (root_tree->objects_cache) {
 		cached_item = gitmod_cache_get(root_tree->objects_cache, path);
-		if (cached_item && cached_item->content)
+		if (!cached_item)
+			// this path is not associated
+			goto end;
+		if (cached_item->content) {
 			// the object was already in memory
-			return (gitmod_object *) gitmod_cache_item_get(cached_item);
+			object = (gitmod_object *) gitmod_cache_item_get(cached_item);
+			goto end;
+		}
 	}
 	if (!(strlen(path) && strcmp(path, "/"))) {
 		// root tree
@@ -132,8 +166,10 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 	if (cached_item)
 		gitmod_cache_item_set(cached_item, object); // so that the item can be used
 end:
-	if (object)
+	if (object && !object->path)
 		object->path = strdup(path);
+	if (orig_path != path)
+		free(path);
 	if (tree_entry)
 		git_tree_entry_free(tree_entry);
 	return object;

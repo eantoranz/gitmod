@@ -5,11 +5,12 @@
  * Suite keep in memory
  */
 
-#include "object.h"
-#include "gitmod.h"
 #include <stdio.h>
 #include <string.h>
 #include <CUnit/Basic.h>
+#include "object.h"
+#include "gitmod.h"
+#include "cache.h"
 
 static int suitekim_init_gitmod()
 {
@@ -23,6 +24,7 @@ static void suitekim_testRevisionInfo()
 	CU_ASSERT(gitmod_info.root_tree->time == 1593046557);
 	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
 	CU_ASSERT(gitmod_info.root_tree->objects_cache != NULL);
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9); // all paths are set
 }
 
 static void suitekim_testGetRootTree()
@@ -109,6 +111,7 @@ static void suitekim_testGetRootTree()
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree != NULL);
 	}
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetObjectByPathBlob()
@@ -131,6 +134,7 @@ static void suitekim_testGetObjectByPathBlob()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetExecObjectByPathBlob()
@@ -153,6 +157,7 @@ static void suitekim_testGetExecObjectByPathBlob()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetObjectByPathTree()
@@ -168,6 +173,7 @@ static void suitekim_testGetObjectByPathTree()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetObjectByPathTreeWithoutMode()
@@ -183,12 +189,14 @@ static void suitekim_testGetObjectByPathTreeWithoutMode()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetNonExistingObjectByPath()
 {
 	gitmod_object * object = gitmod_get_object("blahblah", 1);
 	CU_ASSERT(object == NULL);
+	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
 }
 
 static int suitekim_shutdown_gitmod()

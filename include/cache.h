@@ -22,6 +22,8 @@ gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id);
 
 int gitmod_cache_size(gitmod_cache * cache);
 
+void gitmod_cache_set_fixed(gitmod_cache * cache, int fixed);
+
 const void * gitmod_cache_item_get(gitmod_cache_item * item);
 
 /**

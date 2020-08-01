@@ -43,12 +43,19 @@ end:
 	return cache;
 }
 
+void gitmod_cache_set_fixed(gitmod_cache * cache, int fixed)
+{
+	if (!cache)
+		return;
+	cache->fixed = fixed;
+}
+
 gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id)
 {
 	if (!cache)
 		return NULL;
 	gitmod_cache_item * item = g_hash_table_lookup(cache->items, id);
-	if (item)
+	if (item || cache->fixed)
 		return item;
 	gitmod_lock(cache->locker);
 	// now I am the only one looking into the hash table. Let's tru again
