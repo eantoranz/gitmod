@@ -173,7 +173,7 @@ void gitmod_shutdown()
 	gitmod_info.root_tree_monitor = NULL;
 	git_repository_free(gitmod_info.repo);
 	if (gitmod_info.lock)
-		gitmod_locker_destroy(&gitmod_info.lock);
+		gitmod_locker_dispose(&gitmod_info.lock);
 	// going out, for the time being
 	git_libgit2_shutdown();
 }

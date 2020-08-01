@@ -29,7 +29,7 @@ void gitmod_root_tree_dispose(gitmod_root_tree ** root_tree)
 {
 	if (!(root_tree && *root_tree))
 		return;
-	gitmod_locker_destroy(&(*root_tree)->lock);
+	gitmod_locker_dispose(&(*root_tree)->lock);
 	git_tree_free((*root_tree)->tree);
 	free(*root_tree);
 	*root_tree = NULL;

@@ -27,7 +27,7 @@ void gitmod_unlock(gitmod_locker * locker)
 		pthread_mutex_unlock(&locker->lock);
 }
 
-void gitmod_locker_destroy(gitmod_locker ** locker)
+void gitmod_locker_dispose(gitmod_locker ** locker)
 {
 	if (!(locker && *locker))
 		return;
