@@ -43,12 +43,11 @@ static git_tree * gitmod_get_tree_from_tag(git_tag * tag, time_t * time)
 /**
  * Try to find the root tree, this will be done every time we want to do operations (allows for branch tracking)
  */
-static gitmod_root_tree * gitmod_get_root_tree() {
+static git_tree * gitmod_get_root_tree(time_t * revision_time)
+{
 	int ret;
 	git_object * treeish = NULL;
 	git_tree * root_tree = NULL;
-	gitmod_root_tree * root_tree_node = NULL;
-	time_t revision_time;
 	ret = git_revparse_single(&treeish, gitmod_info.repo, gitmod_info.treeish);
 	if (ret) {
 		fprintf(stderr, "There was error parsing the threeish %s\n", gitmod_info.treeish);
@@ -61,7 +60,7 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 	case GIT_OBJ_TREE:
 		fprintf(stderr, "Threeish is a tree object straight\n");
 		root_tree = (git_tree *) treeish;
-		revision_time = time(NULL);
+		*revision_time = time(NULL);
 		gitmod_info.treeish_type = GIT_OBJ_TREE;
 		goto end;
 	case GIT_OBJ_COMMIT:
@@ -87,7 +86,7 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 		root_tree = (git_tree *) treeish;
 		break;
 	case GIT_OBJ_TAG:
-		root_tree = gitmod_get_tree_from_tag((git_tag *) treeish, &revision_time);
+		root_tree = gitmod_get_tree_from_tag((git_tag *) treeish, revision_time);
 		break;
 	default:
 		ret =  git_commit_tree(&root_tree, (git_commit *) treeish);
@@ -95,18 +94,13 @@ static gitmod_root_tree * gitmod_get_root_tree() {
 			fprintf(stderr, "Could not find tree object for the revision\n");
 			goto end;
 		}
-		revision_time = git_commit_time((git_commit *) treeish);
+		*revision_time = git_commit_time((git_commit *) treeish);
 	}
 end:
-	if (root_tree) {
-		root_tree_node = gitmod_root_tree_create(root_tree, revision_time);
-		if (!root_tree_node)
-			fprintf(stderr, "Could not create a gitmod root tree instance for git's root tree\n");
-	}
 	if (gitmod_info.treeish_type != GIT2_OBJECT_TREE)
 		git_object_free(treeish);
 	
-	return root_tree_node;
+	return root_tree;
 }
 
 static void gitmod_root_tree_monitor_task();
@@ -127,12 +121,18 @@ int gitmod_init(const char * repo_path, const char * treeish)
 	}
 
 	printf("Successfully opened repo at %s\n", git_repository_commondir(gitmod_info.repo));
-	gitmod_root_tree * root_tree = gitmod_get_root_tree();
-	if (!root_tree) {
+	time_t revision_time;
+	git_tree * git_root_tree = gitmod_get_root_tree(&revision_time);
+	if (!git_root_tree) {
 		fprintf(stderr, "Could not open root tree for treeish\n");
 		return -ENOENT;
 	}
-	
+	// need to  create a new root_tree instance
+	gitmod_root_tree * root_tree = gitmod_root_tree_create(git_root_tree, revision_time);
+	if (!root_tree) {
+		fprintf(stderr, "Could not set up root tree instance\n");
+		return -ENOENT;
+	}
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
 	
 	gitmod_info.root_tree = root_tree;
@@ -180,35 +180,35 @@ void gitmod_shutdown()
 
 static void gitmod_root_tree_monitor_task()
 {
-	// TODO avoid using this function to know if treeish has moved because it does other unintended things like creating a cache
-	gitmod_root_tree * new_tree = gitmod_get_root_tree();
+	time_t revision_time;
+	git_tree * new_tree = gitmod_get_root_tree(&revision_time);
 	if (new_tree) {
-		if (git_oid_cmp(git_tree_id(gitmod_info.root_tree->tree), git_tree_id(new_tree->tree))) {
+		if (git_oid_cmp(git_tree_id(gitmod_info.root_tree->tree), git_tree_id(new_tree))) {
 			// apparently the tree moved....
 			gitmod_lock(gitmod_info.lock);
 			
 			gitmod_root_tree * old_tree = gitmod_info.root_tree;
 			
 			// now we are the only one watching the old tree
-			if (git_oid_cmp(git_tree_id(old_tree->tree), git_tree_id(new_tree->tree))) {
+			if (git_oid_cmp(git_tree_id(old_tree->tree), git_tree_id(new_tree))) {
 				printf("root tree changed\n");
 				// it did change, indeed
 				// we can replace the old tree with the new one and let it run normally
-				gitmod_info.root_tree = new_tree;
+				gitmod_info.root_tree = gitmod_root_tree_create(new_tree, revision_time);
 			}
 			
 			gitmod_unlock(gitmod_info.lock); // no need to make anybody wait, the new tree can be used from now on
 			
-			if (old_tree != new_tree) {
+			if (old_tree->tree != new_tree) {
 				gitmod_lock(old_tree->lock);
 				// set if for deletion right away
 				old_tree->marked_for_deletion = 1;
 				int delete_root_tree = old_tree->usage_counter == 0;
 				gitmod_unlock(old_tree->lock);
 				if (delete_root_tree)
-				gitmod_root_tree_dispose(&old_tree);
+					gitmod_root_tree_dispose(&old_tree);
 			}
 		} else
-			gitmod_root_tree_dispose(&new_tree);
+			git_tree_free(new_tree);
 	}
 }
