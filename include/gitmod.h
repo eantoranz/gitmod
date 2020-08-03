@@ -35,6 +35,8 @@ int gitmod_init(const char * repo_path, const char * treeish);
  */
 gitmod_object * gitmod_get_object(const char * path, int pull_mode);
 
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+
 int gitmod_get_mode(gitmod_object * object);
 
 enum gitmod_object_type gitmod_get_type(gitmod_object * object);

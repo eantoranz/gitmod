@@ -166,6 +166,11 @@ gitmod_object * gitmod_get_object(const char *path, int pull_mode)
 	return object;
 }
 
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode)
+{
+	return gitmod_object_get_tree_entry(gitmod_info.root_tree, tree, index, pull_mode);
+}
+
 void gitmod_shutdown()
 {
 	if (gitmod_info.root_tree_monitor)

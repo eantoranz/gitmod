@@ -36,7 +36,7 @@ static void suite1_testGetRootTree()
 		// let's check the names of each one of the entries
 		gitmod_object * entry;
 		for (int i=0; i < num_items; i++) {
-			entry = gitmod_object_get_tree_entry(root_tree, i, 1);
+			entry = gitmod_get_tree_entry(root_tree, i, 1);
 			CU_ASSERT(entry != NULL);
 			if (entry) {
 				char * name = gitmod_object_get_name(entry);
@@ -102,7 +102,7 @@ static void suite1_testGetRootTree()
 			}
 		}
 		// if we go over the board, we get NULL
-		CU_ASSERT(gitmod_object_get_tree_entry(root_tree, 999, 0) == NULL);
+		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999, 0) == NULL);
 
 		gitmod_object_dispose(&root_tree);
 	}

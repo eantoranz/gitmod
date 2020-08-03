@@ -93,35 +93,9 @@ void gitmod_object_dispose(gitmod_object ** object)
 	*object = NULL;
 }
 
-gitmod_object * gitmod_object_get_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
+gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmod_object * tree, int index, int pull_mode)
 {
-	gitmod_object * object = calloc(1, sizeof(gitmod_object));
-	if (!object) {
-		return NULL;
-	}
-	if (pull_mode)
-		object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
-	object->name = strdup(git_tree_entry_name(git_entry));
-	git_otype otype = git_tree_entry_type(git_entry);
-	int ret;
-	switch (otype) {
-	case GIT_OBJ_BLOB:
-		ret = git_tree_entry_to_object((git_object **) &object->blob, gitmod_info.repo, git_entry);
-		break;
-	case GIT_OBJ_TREE:
-		ret = git_tree_entry_to_object((git_object **) &object->tree, gitmod_info.repo, git_entry);
-		break;
-	default:
-		ret = -ENOENT;
-	}
-	if (ret)
-		gitmod_object_dispose(&object);
-	return object;
-}
-
-gitmod_object * gitmod_object_get_tree_entry(gitmod_object * tree, int index, int pull_mode)
-{
-	if (!tree->tree)
+	if (!(root_tree && tree && tree->tree))
 		// not a tree
 		return NULL;
 	git_tree_entry * git_entry = (git_tree_entry *) git_tree_entry_byindex(tree->tree, index); // no need to dispose of manually
@@ -129,13 +103,14 @@ gitmod_object * gitmod_object_get_tree_entry(gitmod_object * tree, int index, in
 		fprintf(stderr, "No entry in tree for index %d\n", index);
 		return NULL;
 	}
-	// got the entry
-	gitmod_object * entry = gitmod_object_get_from_git_tree_entry(git_entry, pull_mode);
-	if (!entry)
-		// could not create the object
-		return NULL;
-	// TODO get full path
-	
-	return entry;
+	const char * item_name = git_tree_entry_name(git_entry);
+	char * path = calloc(1, strlen(tree->path) + strlen(item_name) + (strcmp(tree->path, "/") == 0 ? 0 : 1) + 1);
+	strcpy(path, tree->path);
+	if (strcmp(tree->path, "/"))
+		strcat(path, "/");
+	strcat(path, item_name);
+	gitmod_object * object = gitmod_root_tree_get_object(root_tree, path, pull_mode);
+	free(path);
+	return object;
 }
 

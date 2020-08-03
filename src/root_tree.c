@@ -5,9 +5,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include "types.h"
 #include "lock.h"
 #include "object.h"
+#include "gitmod.h"
 
 gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time)
 {
@@ -59,6 +61,31 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	}
 }
 
+static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
+{
+	gitmod_object * object = calloc(1, sizeof(gitmod_object));
+	if (!object)
+		return NULL;
+	if (pull_mode)
+		object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
+	object->name = strdup(git_tree_entry_name(git_entry));
+	git_otype otype = git_tree_entry_type(git_entry);
+	int ret;
+	switch (otype) {
+	case GIT_OBJ_BLOB:
+		ret = git_tree_entry_to_object((git_object **) &object->blob, gitmod_info.repo, git_entry);
+		break;
+	case GIT_OBJ_TREE:
+		ret = git_tree_entry_to_object((git_object **) &object->tree, gitmod_info.repo, git_entry);
+		break;
+	default:
+		ret = -ENOENT;
+	}
+	if (ret)
+		gitmod_object_dispose(&object);
+	return object;
+}
+
 gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * path, int pull_mode)
 {
 	int ret = 0;
@@ -86,7 +113,7 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 		goto end;
 	}
 	
-	object = gitmod_object_get_from_git_tree_entry(tree_entry, pull_mode);
+	object = gitmod_root_tree_get_object_from_git_tree_entry(tree_entry, pull_mode);
 end:
 	if (object)
 		object->path = strdup(path);

@@ -116,7 +116,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	int num_items = gitmod_object_get_num_entries(dir_node);
 	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitmod_object_get_tree_entry(dir_node, i, 0);
+		entry = gitmod_get_tree_entry(dir_node, i, 0);
 		if (entry) {
 			char * name = gitmod_object_get_name(entry);
 			if (name)

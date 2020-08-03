@@ -23,11 +23,9 @@ char * gitmod_object_get_name(gitmod_object * object);
 
 void gitmod_object_dispose(gitmod_object ** object);
 
-gitmod_object * gitmod_object_get_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode);
-
 /**
  * Used on objects that are _trees_
  */
-gitmod_object * gitmod_object_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmod_object * tree, int index, int pull_mode);
 
 #endif
