@@ -6,19 +6,9 @@
 #ifndef GITMOD_ROOT_TREE_H
 #define GITMOD_ROOT_TREE_H
 
-#include <git2.h>
-#include "lock.h"
-#include "object.h"
+#include "types.h"
 
 #define ROOT_TREEE_MONITOR_DEFAULT_DELAY 100
-
-typedef struct {
-	git_tree * tree;
-	time_t time;
-	gitmod_locker * lock;
-	int usage_counter;
-	int marked_for_deletion;
-} gitmod_root_tree;
 
 gitmod_root_tree * gitmod_root_tree_create();
 

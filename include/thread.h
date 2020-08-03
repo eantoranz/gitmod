@@ -6,15 +6,7 @@
 #ifndef GITMOD_THREAD_H
 #define GITMOD_THREAD_H
 
-#include <pthread.h>
-
-
-typedef struct {
-	void (*task)(); // task that will be called during refresh cycle
-	pthread_t thread; // pthread instance
-	int run_thread;
-	int delay; // delay in milliseconds (0 means it's a tight loop). Default will be set to 100
-} gitmod_thread;
+#include "types.h"
 
 /**
  * Crete and start the thread.

@@ -5,8 +5,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "root_tree.h"
+#include "types.h"
 #include "lock.h"
+#include "object.h"
 
 gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time)
 {

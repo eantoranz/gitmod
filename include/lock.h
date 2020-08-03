@@ -6,11 +6,7 @@
 #ifndef GITMOD_LOCK_H
 #define GITMOD_LOCK_H
 
-#include <pthread.h>
-
-typedef struct {
-	pthread_mutex_t lock;
-} gitmod_locker;
+#include "types.h"
 
 gitmod_locker * gitmod_locker_create();
 

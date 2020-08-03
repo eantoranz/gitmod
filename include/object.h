@@ -7,20 +7,7 @@
 #define GITMOD_OBJECT_H
 
 #include <git2.h>
-
-enum gitmod_object_type {
-	GITMOD_OBJECT_UNKNOWN,
-	GITMOD_OBJECT_TREE,
-	GITMOD_OBJECT_BLOB
-};
-
-typedef struct {
-	git_tree * tree;
-	git_blob * blob;
-	char * name; // local name, _not_ fullpath
-	char * path; // full path
-	int mode;
-} gitmod_object;
+#include "types.h"
 
 enum gitmod_object_type gitmod_object_get_type(gitmod_object * object);
 

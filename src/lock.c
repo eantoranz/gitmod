@@ -5,7 +5,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
-#include "lock.h"
+#include "types.h"
 
 gitmod_locker * gitmod_locker_create()
 {
