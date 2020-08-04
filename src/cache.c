@@ -7,6 +7,7 @@
 #include <glib.h>
 #include "cache.h"
 #include "lock.h"
+#include "object.h"
 
 gitmod_cache * gitmod_cache_create()
 {
@@ -119,8 +120,16 @@ void gitmod_cache_dispose(gitmod_cache ** cache)
 	if (*cache) {
 		printf("Disposing of cache\n");
 		// TODO clear up the objects in memory
+		void * key;
+		void * value;
+		GHashTableIter iter;
+		while (g_hash_table_iter_next (&iter, &key, &value)) {
+			free(key);
+			gitmod_object_dispose((gitmod_object **) &value);
+			g_hash_table_iter_remove (&iter);
+		}
+		g_hash_table_destroy((*cache)->items);
 		gitmod_locker_dispose(&(*cache)->locker);
-		g_hash_table_destroy((*cache)->items); // TODO need to go through the items and dispose of them
 		free(*cache);
 		*cache = NULL;
 	}
