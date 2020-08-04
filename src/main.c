@@ -24,6 +24,7 @@ static struct options {
 	int root_tree_delay; // in milliseconds (default: 100)
 	int show_help;
 	int debug;
+	int keep_in_memory;
 } options;
 
 #define OPTION(t, p) \
@@ -37,6 +38,7 @@ static const struct fuse_opt option_spec[] = {
 	OPTION("--refresh-delay=%d", root_tree_delay),
 	OPTION("--fix", fix),
 	OPTION("--debug", debug),
+	OPTION("--kim", keep_in_memory),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
 	FUSE_OPT_END
@@ -203,7 +205,8 @@ static void show_help(const char *progname)
 	       "                           Useful if using a tag\n"
 	       "    --refresh-delay=<d>    Milliseconds between checks for movement of reference\n"
 	       "                           (default: 100 milliseconds. 0 means it's a tight loop)\n"
-               "    --debug                Show some debugging messages\n"
+	       "    --debug                Show some debugging messages\n"
+	       "    --kim                  Keep (objects) in memory (careful wih size of tree!!!)\n"
                "\n");
 }
 
@@ -234,6 +237,7 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         } else {
 		gitmod_info.fix = options.fix;
+		gitmod_info.keep_in_memory = options.keep_in_memory;
 		gitmod_info.root_tree_delay = options.root_tree_delay;
 		ret = gitmod_init(options.repo_path, options.treeish);
 
