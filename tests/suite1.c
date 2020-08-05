@@ -26,7 +26,7 @@ static void suite1_testRevisionInfo()
 
 static void suite1_testGetRootTree()
 {
-	gitmod_object * root_tree = gitmod_get_object("/", 1);
+	gitmod_object * root_tree = gitmod_get_object("/");
 	CU_ASSERT(root_tree != NULL);
 	if (root_tree) {
 		CU_ASSERT(gitmod_object_get_mode(root_tree) == 0555);
@@ -37,7 +37,7 @@ static void suite1_testGetRootTree()
 		// let's check the names of each one of the entries
 		gitmod_object * entry;
 		for (int i=0; i < num_items; i++) {
-			entry = gitmod_get_tree_entry(root_tree, i, 1);
+			entry = gitmod_get_tree_entry(root_tree, i);
 			CU_ASSERT(entry != NULL);
 			if (entry) {
 				char * name = gitmod_object_get_name(entry);
@@ -103,7 +103,7 @@ static void suite1_testGetRootTree()
 			}
 		}
 		// if we go over the board, we get NULL
-		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999, 0) == NULL);
+		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999) == NULL);
 
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree == NULL);
@@ -112,7 +112,7 @@ static void suite1_testGetRootTree()
 
 static void suite1_testGetObjectByPathBlob()
 {
-	gitmod_object * object = gitmod_get_object("/tests/test.c", 1);
+	gitmod_object * object = gitmod_get_object("/tests/test.c");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
@@ -134,7 +134,7 @@ static void suite1_testGetObjectByPathBlob()
 
 static void suite1_testGetExecObjectByPathBlob()
 {
-	gitmod_object * object = gitmod_get_object("/build.sh", 1);
+	gitmod_object * object = gitmod_get_object("/build.sh");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
@@ -156,22 +156,7 @@ static void suite1_testGetExecObjectByPathBlob()
 
 static void suite1_testGetObjectByPathTree()
 {
-	gitmod_object * object = gitmod_get_object("tests", 1);
-	CU_ASSERT(object != NULL);
-	if (object) {
-		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
-		int tree_entries = gitmod_object_get_num_entries(object);
-		CU_ASSERT(tree_entries == 1);
-		CU_ASSERT(gitmod_object_get_content(object) == NULL);
-		CU_ASSERT(gitmod_object_get_mode(object) == 0);
-		gitmod_dispose_object(&object);
-		CU_ASSERT(object == NULL);
-	}
-}
-
-static void suite1_testGetObjectByPathTreeWithoutMode()
-{
-	gitmod_object * object = gitmod_get_object("tests", 0);
+	gitmod_object * object = gitmod_get_object("tests");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
@@ -186,7 +171,7 @@ static void suite1_testGetObjectByPathTreeWithoutMode()
 
 static void suite1_testGetNonExistingObjectByPath()
 {
-	gitmod_object * object = gitmod_get_object("blahblah", 1);
+	gitmod_object * object = gitmod_get_object("blahblah");
 	CU_ASSERT(object == NULL);
 }
 
@@ -206,7 +191,6 @@ CU_pSuite suite1_setup()
 			CU_add_test(pSuite, "Suite1: getObjectByPathBlob", suite1_testGetObjectByPathBlob) &&
 			CU_add_test(pSuite, "Suite1: getExecObjectByPathBlob", suite1_testGetExecObjectByPathBlob) &&
 			CU_add_test(pSuite, "Suite1: getObjectByPathTree", suite1_testGetObjectByPathTree) &&
-			CU_add_test(pSuite, "Suite1: suite1_testGetObjectByPathTreeWithoutMode", suite1_testGetObjectByPathTreeWithoutMode) &&
 			CU_add_test(pSuite, "Suite1: getNonExisingObjectByPath", suite1_testGetNonExistingObjectByPath))
 		) {
 			return NULL;

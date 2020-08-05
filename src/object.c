@@ -93,7 +93,7 @@ void gitmod_object_dispose(gitmod_object ** object)
 	*object = NULL;
 }
 
-gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmod_object * tree, int index, int pull_mode)
+gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmod_object * tree, int index)
 {
 	if (!(root_tree && tree && tree->tree))
 		// not a tree
@@ -109,7 +109,7 @@ gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmo
 	if (strcmp(tree->path, "/"))
 		strcat(path, "/");
 	strcat(path, item_name);
-	gitmod_object * object = gitmod_root_tree_get_object(root_tree, path, pull_mode);
+	gitmod_object * object = gitmod_root_tree_get_object(root_tree, path);
 	free(path);
 	return object;
 }

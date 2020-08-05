@@ -19,7 +19,7 @@ static void suite2_treeish_is_tree()
 	if (!ret) {
 		CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_TREE);
 		// should check that we can list stuff from here
-		gitmod_object * tree = gitmod_get_object("/", 0);
+		gitmod_object * tree = gitmod_get_object("/");
 		CU_ASSERT(tree != NULL);
 		if (tree) {
 			CU_ASSERT(gitmod_object_get_num_entries(tree) == 6);

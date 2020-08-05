@@ -66,7 +66,7 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	if (options.debug)
 		printf("Running gitmod_getattr(\"%s\", ...)\n", path);
 
-	gitmod_object * object = gitmod_get_object(path, 1);
+	gitmod_object * object = gitmod_get_object(path);
 	if (!object) {
 		fprintf(stderr, "gitmod_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
@@ -105,7 +105,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	if (options.debug)
 		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
-	gitmod_object * dir_node = gitmod_get_object(path, 0);
+	gitmod_object * dir_node = gitmod_get_object(path);
         if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
 		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
@@ -118,7 +118,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	int num_items = gitmod_object_get_num_entries(dir_node);
 	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitmod_get_tree_entry(dir_node, i, 0);
+		entry = gitmod_get_tree_entry(dir_node, i);
 		if (entry) {
 			char * name = gitmod_object_get_name(entry);
 			if (name)
@@ -134,7 +134,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
-	gitmod_object * object = gitmod_get_object(path, 0);
+	gitmod_object * object = gitmod_get_object(path);
 	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
 		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)

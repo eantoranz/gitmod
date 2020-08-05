@@ -34,9 +34,9 @@ int gitmod_init(const char * repo_path, const char * treeish);
 /**
  * Get the object associated with this path
  */
-gitmod_object * gitmod_get_object(const char * path, int pull_mode);
+gitmod_object * gitmod_get_object(const char * path);
 
-gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
 
 void gitmod_dispose_object(gitmod_object ** object);
 
@@ -52,7 +52,7 @@ int gitmod_get_num_entries(gitmod_object * object);
  */
 int gitmod_get_size(gitmod_object * object);
 
-gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
 
 char * gitmod_get_name(gitmod_object * object);
 

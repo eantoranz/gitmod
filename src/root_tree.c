@@ -91,13 +91,12 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	}
 }
 
-static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_entry * git_entry, int pull_mode)
+static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_entry * git_entry)
 {
 	gitmod_object * object = calloc(1, sizeof(gitmod_object));
 	if (!object)
 		return NULL;
-	if (pull_mode)
-		object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
+	object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
 	object->name = strdup(git_tree_entry_name(git_entry));
 	git_otype otype = git_tree_entry_type(git_entry);
 	int ret;
@@ -116,7 +115,7 @@ static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_
 	return object;
 }
 
-gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * orig_path, int pull_mode)
+gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * orig_path)
 {
 	int ret = 0;
 	gitmod_object * object = NULL;
@@ -151,8 +150,7 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 		object->path = strdup("/");
 		object->name = strdup("/");
 		object->tree = root_tree->tree;
-		if (pull_mode)
-			object->mode = 0555; // TODO can we get more info about what the perms are for the mount point?
+		object->mode = 0555; // TODO can we get more info about what the perms are for the mount point?
 	} else {
 		ret = git_tree_entry_bypath(&tree_entry, root_tree->tree, path + (path[0] == '/' ? 1 : 0));
 		if (ret) {
@@ -161,7 +159,7 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 			goto end;
 		}
 		
-		object = gitmod_root_tree_get_object_from_git_tree_entry(tree_entry, pull_mode);
+		object = gitmod_root_tree_get_object_from_git_tree_entry(tree_entry);
 	}
 	if (cached_item)
 		gitmod_cache_item_set(cached_item, object); // so that the item can be used
