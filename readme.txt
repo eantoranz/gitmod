@@ -29,6 +29,9 @@ It also provides a few more options
 
 Check more options and details with ./gitmod -h
 
+Performance:
+The --kim option allows a 10x throughput improvement in my computer.
+
 
 IMPORTANT:
 This is very alpha software at the moment so:
