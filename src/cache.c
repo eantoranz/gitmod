@@ -9,7 +9,7 @@
 #include "lock.h"
 #include "object.h"
 
-gitmod_cache * gitmod_cache_create()
+gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {
 	gitmod_locker * locker = NULL;
 	GHashTable * items = NULL;
@@ -20,7 +20,7 @@ gitmod_cache * gitmod_cache_create()
 		goto end;
 	}
 	
-	items = g_hash_table_new(g_str_hash, g_str_equal);
+	items = g_hash_table_new_full(g_str_hash, g_str_equal, key_destroy_func, value_destroy_func);
 	if (!items) {
 		fprintf(stderr, "Could not setup hashtable for cache\n");
 		goto end;
@@ -119,15 +119,6 @@ void gitmod_cache_dispose(gitmod_cache ** cache)
 {
 	if (*cache) {
 		printf("Disposing of cache\n");
-		// TODO clear up the objects in memory
-		void * key;
-		void * value;
-		GHashTableIter iter;
-		while (g_hash_table_iter_next (&iter, &key, &value)) {
-			free(key);
-			gitmod_object_dispose((gitmod_object **) &value);
-			g_hash_table_iter_remove (&iter);
-		}
 		g_hash_table_destroy((*cache)->items);
 		gitmod_locker_dispose(&(*cache)->locker);
 		free(*cache);

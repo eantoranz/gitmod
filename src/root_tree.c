@@ -27,6 +27,21 @@ static int gitmod_tree_walk(const char *root, const git_tree_entry *entry, void 
 	return 0;
 }
 
+static void destroy_cache_key(void * key)
+{
+	if (key)
+		free(key);
+}
+
+static void destroy_cache_value(void * value)
+{
+	gitmod_object ** object = value;
+	if (!*object)
+		// value hadn't been set yet for this path
+		return;
+	gitmod_object_dispose(object);
+}
+
 gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time, int use_cache)
 {
 	gitmod_root_tree * root_tree;
@@ -34,7 +49,7 @@ gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time
 	if (root_tree) {
 		root_tree->lock = gitmod_locker_create();
 		if (root_tree->lock && use_cache) {
-			root_tree->objects_cache = gitmod_cache_create();
+			root_tree->objects_cache = gitmod_cache_create(destroy_cache_key, destroy_cache_value);
 			// do a walk so that we set all paths right now
 			git_tree_walk(tree, GIT_TREEWALK_PRE, gitmod_tree_walk, root_tree->objects_cache);
 			// make sure that the root path is associated cause it's not included in the tree walk

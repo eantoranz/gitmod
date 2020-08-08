@@ -8,7 +8,7 @@
 
 #include <types.h>
 
-gitmod_cache * gitmod_cache_create();
+gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_notify, GDestroyNotify value_destroy_notify);
 
 /**
  * Try to find the object for this id.

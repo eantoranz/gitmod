@@ -186,6 +186,8 @@ void gitmod_shutdown()
 		gitmod_thread_release(&gitmod_info.root_tree_monitor);
 	gitmod_info.root_tree_monitor = NULL;
 	git_repository_free(gitmod_info.repo);
+	if (gitmod_info.root_tree)
+		gitmod_root_tree_dispose(&gitmod_info.root_tree);
 	if (gitmod_info.lock)
 		gitmod_locker_dispose(&gitmod_info.lock);
 	// going out, for the time being
