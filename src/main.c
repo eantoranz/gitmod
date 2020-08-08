@@ -206,7 +206,7 @@ static void show_help(const char *progname)
 	       "    --refresh-delay=<d>    Milliseconds between checks for movement of reference\n"
 	       "                           (default: 100 milliseconds. 0 means it's a tight loop)\n"
 	       "    --debug                Show some debugging messages\n"
-	       "    --kim                  Keep (objects) in memory (careful wih size of tree!!!)\n"
+	       "    --kim                  Keep (objects) in memory (careful with size of tree!!!)\n"
                "\n");
 }
 
