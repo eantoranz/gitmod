@@ -23,6 +23,7 @@ struct gitmod_info {
 	gitmod_thread * root_tree_monitor;
 	int root_tree_delay; // in milliseconds (0 is a tight loop)
 	int fix; // use to not track changes in root tree
+	int keep_in_memory;
 } gitmod_info;
 
 /**
@@ -33,9 +34,11 @@ int gitmod_init(const char * repo_path, const char * treeish);
 /**
  * Get the object associated with this path
  */
-gitmod_object * gitmod_get_object(const char * path, int pull_mode);
+gitmod_object * gitmod_get_object(const char * path);
 
-gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
+
+void gitmod_dispose_object(gitmod_object ** object);
 
 int gitmod_get_mode(gitmod_object * object);
 
@@ -49,7 +52,7 @@ int gitmod_get_num_entries(gitmod_object * object);
  */
 int gitmod_get_size(gitmod_object * object);
 
-gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index, int pull_mode);
+gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
 
 char * gitmod_get_name(gitmod_object * object);
 

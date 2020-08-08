@@ -24,6 +24,7 @@ static struct options {
 	int root_tree_delay; // in milliseconds (default: 100)
 	int show_help;
 	int debug;
+	int keep_in_memory;
 } options;
 
 #define OPTION(t, p) \
@@ -37,6 +38,7 @@ static const struct fuse_opt option_spec[] = {
 	OPTION("--refresh-delay=%d", root_tree_delay),
 	OPTION("--fix", fix),
 	OPTION("--debug", debug),
+	OPTION("--kim", keep_in_memory),
 	OPTION("--help", show_help),
 	OPTION("-h", show_help),
 	FUSE_OPT_END
@@ -64,7 +66,7 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	if (options.debug)
 		printf("Running gitmod_getattr(\"%s\", ...)\n", path);
 
-	gitmod_object * object = gitmod_get_object(path, 1);
+	gitmod_object * object = gitmod_get_object(path);
 	if (!object) {
 		fprintf(stderr, "gitmod_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
@@ -87,7 +89,7 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 		stbuf->st_size = gitmod_object_get_size(object);
 	} else
 		res = -ENOENT;
-	gitmod_object_dispose(&object);
+	gitmod_dispose_object(&object);
 
         return res;
 }
@@ -103,11 +105,11 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	if (options.debug)
 		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
-	gitmod_object * dir_node = gitmod_get_object(path, 0);
+	gitmod_object * dir_node = gitmod_get_object(path);
         if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
 		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
-			gitmod_object_dispose(&dir_node);
+			gitmod_dispose_object(&dir_node);
                 return -ENOENT;
 	}
 
@@ -116,15 +118,15 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	int num_items = gitmod_object_get_num_entries(dir_node);
 	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitmod_get_tree_entry(dir_node, i, 0);
+		entry = gitmod_get_tree_entry(dir_node, i);
 		if (entry) {
 			char * name = gitmod_object_get_name(entry);
 			if (name)
 				filler(buf, name, NULL, 0, 0);
-			gitmod_object_dispose(&entry);
+			gitmod_dispose_object(&entry);
 		}
 	}
-	gitmod_object_dispose(&dir_node);
+	gitmod_dispose_object(&dir_node);
 
         return 0;
 }
@@ -132,11 +134,11 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
-	gitmod_object * object = gitmod_get_object(path, 0);
+	gitmod_object * object = gitmod_get_object(path);
 	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
 		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
-			gitmod_object_dispose(&object);
+			gitmod_dispose_object(&object);
 		ret = -ENOENT;
 	} else
 		fi->fh = (uint64_t) object;
@@ -165,7 +167,7 @@ static int gitmod_fs_read(const char *path, char *buf, size_t size, off_t offset
 static int gitmod_fs_release(const char * path, struct fuse_file_info *fi)
 {
 	gitmod_object * object = (gitmod_object *) fi->fh; 
-	gitmod_object_dispose(&object);
+	gitmod_dispose_object(&object);
 	return 0;
 }
 
@@ -203,7 +205,8 @@ static void show_help(const char *progname)
 	       "                           Useful if using a tag\n"
 	       "    --refresh-delay=<d>    Milliseconds between checks for movement of reference\n"
 	       "                           (default: 100 milliseconds. 0 means it's a tight loop)\n"
-               "    --debug                Show some debugging messages\n"
+	       "    --debug                Show some debugging messages\n"
+	       "    --kim                  Keep (objects) in memory (careful wih size of tree!!!)\n"
                "\n");
 }
 
@@ -234,6 +237,7 @@ int main(int argc, char *argv[])
                 args.argv[0][0] = '\0';
         } else {
 		gitmod_info.fix = options.fix;
+		gitmod_info.keep_in_memory = options.keep_in_memory;
 		gitmod_info.root_tree_delay = options.root_tree_delay;
 		ret = gitmod_init(options.repo_path, options.treeish);
 

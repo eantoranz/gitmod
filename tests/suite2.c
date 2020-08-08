@@ -19,11 +19,11 @@ static void suite2_treeish_is_tree()
 	if (!ret) {
 		CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_TREE);
 		// should check that we can list stuff from here
-		gitmod_object * tree = gitmod_get_object("/", 0);
+		gitmod_object * tree = gitmod_get_object("/");
 		CU_ASSERT(tree != NULL);
 		if (tree) {
 			CU_ASSERT(gitmod_object_get_num_entries(tree) == 6);
-			gitmod_object_dispose(&tree);
+			gitmod_dispose_object(&tree);
 		}
 		// In case this worked, so that we can run other tests
 		gitmod_shutdown();
@@ -58,8 +58,8 @@ CU_pSuite suite2_setup()
 		// did work
 		if (!(CU_add_test(pSuite, "Suite2: treeish_is_object", suite2_treeish_is_tree) &&
 			CU_add_test(pSuite, "Suite2: treeish_is_tag", suite2_treeish_is_blob) &&
-			CU_add_test(pSuite, "Suite2: treeish_is_tag", suite2_treeish_is_tag)
-		)) {
+			CU_add_test(pSuite, "Suite2: treeish_is_tag", suite2_treeish_is_tag))
+		) {
 			return NULL;
 		}
 	}
