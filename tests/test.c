@@ -9,7 +9,7 @@
 
 int main()
 {
-	CU_pSuite pSuite1 = NULL, pSuite2 = NULL, pSuiteKim = NULL;
+	CU_pSuite pSuite1 = NULL, pSuite2 = NULL, pSuiteKim = NULL, pSuiteKim2 = NULL;
 
 	/* initialize the CUnit test registry */
 	if (CUE_SUCCESS != CU_initialize_registry())
@@ -19,7 +19,8 @@ int main()
 	pSuite1 = suite1_setup();
 	pSuite2 = suite2_setup();
 	pSuiteKim = suitekim_setup();
-	if (!(pSuite1 && pSuite2 && pSuiteKim)) {
+	pSuiteKim2 = suitekim2_setup();
+	if (!(pSuite1 && pSuite2 && pSuiteKim && pSuiteKim2)) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}

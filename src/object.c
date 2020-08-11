@@ -87,6 +87,8 @@ void gitmod_object_dispose(gitmod_object ** object)
 		free((*object)->name);
 	if ((*object)->path)
 		free((*object)->path);
+	if ((*object)->lock)
+		gitmod_locker_dispose(&(*object)->lock);
 
 	// finally
 	free(*object);

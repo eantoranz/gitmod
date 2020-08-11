@@ -39,7 +39,13 @@ static void destroy_cache_value(void * value)
 	if (!*object)
 		// value hadn't been set yet for this path
 		return;
-	gitmod_object_dispose(object);
+	if ((*object)->lock)
+		gitmod_lock((*object)->lock);
+	int dispose_of_object = (*object)->usage <= 0;
+	if ((*object)->lock)
+		gitmod_unlock((*object)->lock);
+	if (dispose_of_object)
+		gitmod_object_dispose(object);
 }
 
 gitmod_root_tree * gitmod_root_tree_create(git_tree * tree, time_t revision_time, int use_cache)
@@ -111,6 +117,7 @@ static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_
 	gitmod_object * object = calloc(1, sizeof(gitmod_object));
 	if (!object)
 		return NULL;
+	object->lock = gitmod_locker_create();
 	object->mode = git_tree_entry_filemode(git_entry) & 0555; // RO always
 	object->name = strdup(git_tree_entry_name(git_entry));
 	git_otype otype = git_tree_entry_type(git_entry);
@@ -179,8 +186,18 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 	if (cached_item)
 		gitmod_cache_item_set(cached_item, object); // so that the item can be used
 end:
-	if (object && !object->path)
-		object->path = strdup(path);
+        if (object) {
+		if (object->lock)
+			// make sure no one else is looking
+			gitmod_lock(object->lock);
+		object->usage++;
+		if (!object->path)
+			object->path = strdup(path);
+		if (!object->root_tree)
+			object->root_tree = root_tree;
+		if (object->lock)
+			gitmod_unlock(object->lock);
+	}
 	if (orig_path != path)
 		free(path);
 	if (tree_entry)
@@ -188,11 +205,31 @@ end:
 	return object;
 }
 
-void gitmod_root_tree_dispose_object(gitmod_root_tree * tree, gitmod_object ** object)
+void gitmod_root_tree_dispose_object(gitmod_root_tree * root_tree, gitmod_object ** object)
 {
-	if (!(tree && tree->objects_cache))
+	if (!(object && *object))
+		// nothing to do
+		return;
+	// if the object is not cached, we can dispose of it direcly
+	if (!(root_tree && root_tree->objects_cache)) {
 		// objects are not cached
 		gitmod_object_dispose(object);
+		return;
+	}
 	
-	// objects are cached so won't dispose of it
+	// the object is in cache, but if the tree has changed, we can dispose of this object (_if_ usage == 0)
+	if ((*object)->lock)
+		gitmod_lock((*object)->lock);
+	(*object)->usage--;
+	int dispose_of_object = 0;
+	// TODO consider if we must request a lock on the root_tree to do the check if the root_tree has changed
+	if (root_tree != (*object)->root_tree) {
+		// root tree has changed, need to dispose of it
+		if ((*object)->usage <= 0)
+			dispose_of_object = 1;
+	}
+	if ((*object)->lock)
+		gitmod_unlock((*object)->lock);
+	if (dispose_of_object)
+		gitmod_object_dispose(object);
 }
