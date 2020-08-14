@@ -38,7 +38,10 @@ gitmod_object * gitmod_get_object(const char * path);
 
 gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
 
-void gitmod_dispose_object(gitmod_object ** object);
+/**
+ * Will return if the tree associated to the object was deleted
+ */
+int gitmod_dispose_object(gitmod_object ** object);
 
 int gitmod_get_mode(gitmod_object * object);
 

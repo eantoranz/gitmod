@@ -162,7 +162,7 @@ gitmod_object * gitmod_get_object(const char *path)
 	gitmod_root_tree_increase_usage(gitmod_info.root_tree); // it will get a lock and release it for increasign counter
 	gitmod_unlock(gitmod_info.lock);
 	object = gitmod_root_tree_get_object(gitmod_info.root_tree, path);
-	gitmod_root_tree_decrease_usage(gitmod_info.root_tree);
+	gitmod_root_tree_decrease_usage(&gitmod_info.root_tree);
 	return object;
 }
 
@@ -171,13 +171,9 @@ gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index)
 	return gitmod_object_get_tree_entry(gitmod_info.root_tree, tree, index);
 }
 
-void gitmod_dispose_object(gitmod_object ** object)
+int gitmod_dispose_object(gitmod_object ** object)
 {
-	/**
-	 * TODO how can we make sure that the object is coming from this tree?
-	 * Might need to associate the object to its tree
-	 */
-	gitmod_root_tree_dispose_object(gitmod_info.root_tree, object);
+	return gitmod_root_tree_dispose_object(object);
 }
 
 void gitmod_shutdown()

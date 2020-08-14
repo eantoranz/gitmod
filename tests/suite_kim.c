@@ -31,6 +31,7 @@ static void suitekim_testGetRootTree()
 {
 	gitmod_object * root_tree = gitmod_get_object("/");
 	CU_ASSERT(root_tree != NULL);
+	CU_ASSERT(gitmod_info.root_tree->usage_counter == 1);
 	if (root_tree) {
 		CU_ASSERT(gitmod_object_get_mode(root_tree) == 0555);
 		CU_ASSERT(gitmod_object_get_type(root_tree) == GITMOD_OBJECT_TREE);

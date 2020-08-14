@@ -53,9 +53,7 @@ typedef struct {
 	char * name; // local name, _not_ fullpath
 	char * path; // full path
 	int mode;
-	gitmod_locker * lock;
 	gitmod_root_tree * root_tree; // tree that was used to associate this object
-	int usage; // number of times that this object is currently being used (different threads and so on)
 } gitmod_object;
 
 #endif
