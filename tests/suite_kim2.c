@@ -109,13 +109,211 @@ static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 	git_libgit2_shutdown();
 }
 
+static void suitekim2_treeMovesNoObjectInUse()
+{
+	git_libgit2_init();
+	int ret = git_repository_open(&gm_info->repo, ".");
+	CU_ASSERT(!ret);
+	if (!ret) {
+		git_object * treeish;
+		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		CU_ASSERT(!ret);
+		if (!ret) {
+			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+			CU_ASSERT(root_tree != NULL);
+			if (root_tree) {
+				CU_ASSERT(root_tree->usage_counter == 0);
+				gm_info->root_tree = root_tree;
+				// will askto change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				CU_ASSERT(!ret);
+				if (!ret) {
+					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+					CU_ASSERT(root_tree2 != NULL);
+					gitmod_lock(gm_info->lock);
+					ret = gitmod_root_tree_changed(root_tree2);
+					CU_ASSERT(ret != 0); // original root tree was deleted
+					CU_ASSERT(gm_info->root_tree == root_tree2);
+					if (!ret) {
+						// failed test, root tree was not deleted
+						gitmod_root_tree_dispose(&root_tree);
+					}
+					gitmod_root_tree_dispose(&root_tree2);
+				}
+			}
+		}
+	}
+	git_libgit2_shutdown();
+}
+
+static void suitekim2_treeMoves1ObjectInUse()
+{
+	git_libgit2_init();
+	int ret = git_repository_open(&gm_info->repo, ".");
+	CU_ASSERT(!ret);
+	if (!ret) {
+		git_object * treeish;
+		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		CU_ASSERT(!ret);
+		if (!ret) {
+			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+			CU_ASSERT(root_tree != NULL);
+			if (root_tree) {
+				CU_ASSERT(root_tree->usage_counter == 0);
+				gm_info->root_tree = root_tree;
+				
+				// pull an object from tree
+				gitmod_object * object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				CU_ASSERT(object != NULL);
+				CU_ASSERT(root_tree->usage_counter == 1);
+				// will askto change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				CU_ASSERT(!ret);
+				if (!ret) {
+					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+					CU_ASSERT(root_tree2 != NULL);
+					gitmod_lock(gm_info->lock);
+					ret = gitmod_root_tree_changed(root_tree2);
+					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
+					CU_ASSERT(gm_info->root_tree == root_tree2);
+					// when we drop the object, original tree should be killed
+					ret = gitmod_root_tree_dispose_object(&object);
+					CU_ASSERT(ret);
+					if (!ret) {
+						// failed test, root tree was _not_ deleted
+						gitmod_root_tree_dispose(&root_tree);
+					}
+					gitmod_root_tree_dispose(&root_tree2);
+				}
+			}
+		}
+	}
+	git_libgit2_shutdown();
+}
+
+static void suitekim2_treeMoves1ObjectInUseTwice()
+{
+	git_libgit2_init();
+	int ret = git_repository_open(&gm_info->repo, ".");
+	CU_ASSERT(!ret);
+	if (!ret) {
+		git_object * treeish;
+		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		CU_ASSERT(!ret);
+		if (!ret) {
+			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+			CU_ASSERT(root_tree != NULL);
+			if (root_tree) {
+				CU_ASSERT(root_tree->usage_counter == 0);
+				gm_info->root_tree = root_tree;
+				
+				// pull an object from tree
+				gitmod_object * object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				CU_ASSERT(object != NULL);
+				CU_ASSERT(object->root_tree == root_tree);
+				CU_ASSERT(root_tree->usage_counter == 1);
+				gitmod_object * object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				CU_ASSERT(object2 != NULL);
+				CU_ASSERT(object2->root_tree == root_tree);
+				CU_ASSERT(root_tree->usage_counter == 2);
+				CU_ASSERT(object == object2);
+				// will askto change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				CU_ASSERT(!ret);
+				if (!ret) {
+					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+					CU_ASSERT(root_tree2 != NULL);
+					gitmod_lock(gm_info->lock);
+					CU_ASSERT(root_tree->usage_counter == 2);
+					ret = gitmod_root_tree_changed(root_tree2);
+					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
+					CU_ASSERT(gm_info->root_tree == root_tree2);
+					CU_ASSERT(root_tree->usage_counter == 2);
+					// when we drop the object, original tree should be killed
+					ret = gitmod_root_tree_dispose_object(&object);
+					CU_ASSERT(!ret);
+					CU_ASSERT(root_tree->usage_counter == 1);
+					ret = gitmod_root_tree_dispose_object(&object2);
+					CU_ASSERT(ret);
+					if (!ret) {
+						// failed test, root tree was _not_ deleted
+						gitmod_root_tree_dispose(&root_tree);
+					}
+					gitmod_root_tree_dispose(&root_tree2);
+				}
+			}
+		}
+	}
+	git_libgit2_shutdown();
+}
+
+static void suitekim2_treeMoves2ObjectsInUse()
+{
+	git_libgit2_init();
+	int ret = git_repository_open(&gm_info->repo, ".");
+	CU_ASSERT(!ret);
+	if (!ret) {
+		git_object * treeish;
+		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		CU_ASSERT(!ret);
+		if (!ret) {
+			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+			CU_ASSERT(root_tree != NULL);
+			if (root_tree) {
+				CU_ASSERT(root_tree->usage_counter == 0);
+				gm_info->root_tree = root_tree;
+				
+				// pull an object from tree
+				gitmod_object * object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				CU_ASSERT(object != NULL);
+				CU_ASSERT(object->root_tree == root_tree);
+				CU_ASSERT(root_tree->usage_counter == 1);
+				gitmod_object * object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/readme.txt");
+				CU_ASSERT(object2 != NULL);
+				CU_ASSERT(object2->root_tree == root_tree);
+				CU_ASSERT(root_tree->usage_counter == 2);
+				CU_ASSERT(object != object2);
+				// will askto change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				CU_ASSERT(!ret);
+				if (!ret) {
+					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
+					CU_ASSERT(root_tree2 != NULL);
+					gitmod_lock(gm_info->lock);
+					CU_ASSERT(root_tree->usage_counter == 2);
+					ret = gitmod_root_tree_changed(root_tree2);
+					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
+					CU_ASSERT(gm_info->root_tree == root_tree2);
+					CU_ASSERT(root_tree->usage_counter == 2);
+					// when we drop the object, original tree should be killed
+					ret = gitmod_root_tree_dispose_object(&object);
+					CU_ASSERT(!ret);
+					CU_ASSERT(root_tree->usage_counter == 1);
+					ret = gitmod_root_tree_dispose_object(&object2);
+					CU_ASSERT(ret);
+					if (!ret) {
+						// failed test, root tree was _not_ deleted
+						gitmod_root_tree_dispose(&root_tree);
+					}
+					gitmod_root_tree_dispose(&root_tree2);
+				}
+			}
+		}
+	}
+	git_libgit2_shutdown();
+}
+
 CU_pSuite suitekim2_setup()
 {
 	CU_pSuite pSuite = CU_add_suite("Suitekim2", suitekim2_init_gitmod, NULL);
 	if (pSuite != NULL) {
 		// did work
 		if (!(CU_add_test(pSuite, "Suitekim2: pullTwoDifferentObjectsMarkForDeletionDisposeOfThem", suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem) &&
-			CU_add_test(pSuite, "Suitekim2: pullTwiceSameObjectMarkForDeletionDisposeOfThem", suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem)
+			CU_add_test(pSuite, "Suitekim2: pullTwiceSameObjectMarkForDeletionDisposeOfThem", suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem) &&
+			CU_add_test(pSuite, "Suitekim2, treeMovesNoObjectInUse", suitekim2_treeMovesNoObjectInUse) &&
+			CU_add_test(pSuite, "Suitekim2, treeMoves1ObjectInUse", suitekim2_treeMoves1ObjectInUse) &&
+			CU_add_test(pSuite, "Suitekim2, treeMoves1ObjectInUseTwice", suitekim2_treeMoves1ObjectInUseTwice) &&
+			CU_add_test(pSuite, "Suitekim2, treeMoves2ObjectsInUse", suitekim2_treeMoves2ObjectsInUse)
 		)) {
 			return NULL;
 		}

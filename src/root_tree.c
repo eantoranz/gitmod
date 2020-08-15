@@ -176,11 +176,11 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_info * info, gitmod_root_tree
 		
 		object = gitmod_root_tree_get_object_from_git_tree_entry(info, tree_entry);
 	}
+end:
 	if (cached_item) {
 		gitmod_root_tree_increase_usage(root_tree); // one more item using this root_tree
 		gitmod_cache_item_set(cached_item, object); // so that the item can be used
 	}
-end:
         if (object) {
 		if (!object->path)
 			object->path = strdup(path);
