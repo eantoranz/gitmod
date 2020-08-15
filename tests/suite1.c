@@ -11,17 +11,20 @@
 #include <string.h>
 #include <CUnit/Basic.h>
 
+static gitmod_info * gm_info;
+
 static int suite1_init_gitmod()
 {
+	gm_info = gitmod_get_info();
 	return gitmod_init(".", "583510cd3ae56e");
 }
 
 static void suite1_testRevisionInfo()
 {
-	fprintf(stderr, "Revision time: %ld\n", gitmod_info.root_tree->time);
-	CU_ASSERT(gitmod_info.root_tree->time == 1593046557);
-	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
-	CU_ASSERT(gitmod_info.root_tree->objects_cache == NULL);
+	fprintf(stderr, "Revision time: %ld\n", gm_info->root_tree->time);
+	CU_ASSERT(gm_info->root_tree->time == 1593046557);
+	CU_ASSERT(gm_info->treeish_type == GIT_OBJ_COMMIT);
+	CU_ASSERT(gm_info->root_tree->objects_cache == NULL);
 }
 
 static void suite1_testGetRootTree()
@@ -31,7 +34,7 @@ static void suite1_testGetRootTree()
 	if (root_tree) {
 		CU_ASSERT(gitmod_object_get_mode(root_tree) == 0555);
 		CU_ASSERT(gitmod_object_get_type(root_tree) == GITMOD_OBJECT_TREE);
-		CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		int num_items = gitmod_object_get_num_entries(root_tree);
 		CU_ASSERT(num_items == 5);
 
@@ -39,7 +42,7 @@ static void suite1_testGetRootTree()
 		gitmod_object * entry;
 		for (int i=0; i < num_items; i++) {
 			entry = gitmod_get_tree_entry(root_tree, i);
-			CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+			CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 			CU_ASSERT(entry != NULL);
 			if (entry) {
 				char * name = gitmod_object_get_name(entry);
@@ -106,7 +109,7 @@ static void suite1_testGetRootTree()
 		}
 		// if we go over the board, we get NULL
 		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999) == NULL);
-		CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree == NULL);
@@ -118,7 +121,7 @@ static void suite1_testGetObjectByPathBlob()
 	gitmod_object * object = gitmod_get_object("/tests/test.c");
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
@@ -141,7 +144,7 @@ static void suite1_testGetExecObjectByPathBlob()
 	gitmod_object * object = gitmod_get_object("/build.sh");
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
@@ -164,7 +167,7 @@ static void suite1_testGetObjectByPathTree()
 	gitmod_object * object = gitmod_get_object("tests");
 	CU_ASSERT(object != NULL);
 	if (object) {
-		CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
 		int tree_entries = gitmod_object_get_num_entries(object);
 		CU_ASSERT(tree_entries == 1);
@@ -179,7 +182,7 @@ static void suite1_testGetNonExistingObjectByPath()
 {
 	gitmod_object * object = gitmod_get_object("blahblah");
 	CU_ASSERT(object == NULL);
-	CU_ASSERT(gitmod_info.root_tree->usage_counter == 0);
+	CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 }
 
 static int suite1_shutdown_gitmod()

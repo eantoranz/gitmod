@@ -56,4 +56,18 @@ typedef struct {
 	gitmod_root_tree * root_tree; // tree that was used to associate this object
 } gitmod_object;
 
+typedef struct {
+	git_repository * repo;
+	const char * treeish; // treeish that is asked to track
+	git_otype treeish_type;
+	gitmod_root_tree * root_tree;
+	int gid; // provided by fuse
+	int uid; // provided by fuse
+	gitmod_locker * lock;
+	gitmod_thread * root_tree_monitor;
+	int root_tree_delay; // in milliseconds (0 is a tight loop)
+	int fix; // use to not track changes in root tree
+	int keep_in_memory;
+} gitmod_info;
+
 #endif

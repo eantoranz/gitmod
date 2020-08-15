@@ -12,26 +12,29 @@
 #include "gitmod.h"
 #include "cache.h"
 
+static gitmod_info * gm_info;
+
 static int suitekim_init_gitmod()
 {
-	gitmod_info.keep_in_memory = 1;
+	gm_info = gitmod_get_info();
+	gm_info->keep_in_memory = 1;
 	return gitmod_init(".", "583510cd3ae56e");
 }
 
 static void suitekim_testRevisionInfo()
 {
-	fprintf(stderr, "Revision time: %ld\n", gitmod_info.root_tree->time);
-	CU_ASSERT(gitmod_info.root_tree->time == 1593046557);
-	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
-	CU_ASSERT(gitmod_info.root_tree->objects_cache != NULL);
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9); // all paths are set
+	fprintf(stderr, "Revision time: %ld\n", gm_info->root_tree->time);
+	CU_ASSERT(gm_info->root_tree->time == 1593046557);
+	CU_ASSERT(gm_info->treeish_type == GIT_OBJ_COMMIT);
+	CU_ASSERT(gm_info->root_tree->objects_cache != NULL);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9); // all paths are set
 }
 
 static void suitekim_testGetRootTree()
 {
 	gitmod_object * root_tree = gitmod_get_object("/");
 	CU_ASSERT(root_tree != NULL);
-	CU_ASSERT(gitmod_info.root_tree->usage_counter == 1);
+	CU_ASSERT(gm_info->root_tree->usage_counter == 1);
 	if (root_tree) {
 		CU_ASSERT(gitmod_object_get_mode(root_tree) == 0555);
 		CU_ASSERT(gitmod_object_get_type(root_tree) == GITMOD_OBJECT_TREE);
@@ -112,7 +115,7 @@ static void suitekim_testGetRootTree()
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetObjectByPathBlob()
@@ -135,7 +138,7 @@ static void suitekim_testGetObjectByPathBlob()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetExecObjectByPathBlob()
@@ -158,7 +161,7 @@ static void suitekim_testGetExecObjectByPathBlob()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetObjectByPathTree()
@@ -174,20 +177,20 @@ static void suitekim_testGetObjectByPathTree()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
 static void suitekim_testGetNonExistingObjectByPath()
 {
 	gitmod_object * object = gitmod_get_object("blahblah");
 	CU_ASSERT(object == NULL);
-	CU_ASSERT(gitmod_cache_size(gitmod_info.root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
 static int suitekim_shutdown_gitmod()
 {
 	gitmod_shutdown();
-	gitmod_info.keep_in_memory = 0;
+	gm_info->keep_in_memory = 0;
 	return 0;
 }
 

@@ -10,14 +10,23 @@
 #include <CUnit/Basic.h>
 #include "gitmod.h"
 
-static void suitekim_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
+static gitmod_info * gm_info;
+
+static int suitekim2_init_gitmod()
+{
+	gm_info = gitmod_get_info();
+	gm_info->keep_in_memory = 1;
+	return 0;
+}
+
+static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 {
 	git_libgit2_init();
-	int ret = git_repository_open(&gitmod_info.repo, ".");
+	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object * treeish;
-		ret = git_revparse_single(&treeish, gitmod_info.repo, "81c15dc513f285e727e6e498d24474a885b7dc01"); // tree from v0.7
+		ret = git_revparse_single(&treeish, gm_info->repo, "81c15dc513f285e727e6e498d24474a885b7dc01"); // tree from v0.7
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -25,10 +34,10 @@ static void suitekim_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 			int root_tree_deleted = 0;
 			if (root_tree) {
 				CU_ASSERT(root_tree->usage_counter == 0);
-				gitmod_object * object = gitmod_root_tree_get_object(root_tree, "/Makefile");
+				gitmod_object * object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
-				gitmod_object * object2 = gitmod_root_tree_get_object(root_tree, "/src/gitmod.c");
+				gitmod_object * object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/src/gitmod.c");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
 				// we mark it to be disposed
@@ -50,19 +59,19 @@ static void suitekim_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 			}
 			git_object_free(treeish);
 		}
-		git_repository_free(gitmod_info.repo);
+		git_repository_free(gm_info->repo);
 	}
 	git_libgit2_shutdown();
 }
 
-static void suitekim_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
+static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 {
 	git_libgit2_init();
-	int ret = git_repository_open(&gitmod_info.repo, ".");
+	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object * treeish;
-		ret = git_revparse_single(&treeish, gitmod_info.repo, "81c15dc513f285e727e6e498d24474a885b7dc01"); // tree from v0.7
+		ret = git_revparse_single(&treeish, gm_info->repo, "81c15dc513f285e727e6e498d24474a885b7dc01"); // tree from v0.7
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree * root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -70,10 +79,10 @@ static void suitekim_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 			int root_tree_deleted = 0;
 			if (root_tree) {
 				CU_ASSERT(root_tree->usage_counter == 0);
-				gitmod_object * object = gitmod_root_tree_get_object(root_tree, "/Makefile");
+				gitmod_object * object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
-				gitmod_object * object2 = gitmod_root_tree_get_object(root_tree, "/Makefile");
+				gitmod_object * object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
 				// we mark it to be disposed
@@ -95,18 +104,18 @@ static void suitekim_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 			}
 			git_object_free(treeish);
 		}
-		git_repository_free(gitmod_info.repo);
+		git_repository_free(gm_info->repo);
 	}
 	git_libgit2_shutdown();
 }
 
 CU_pSuite suitekim2_setup()
 {
-	CU_pSuite pSuite = CU_add_suite("Suitekim2", NULL, NULL);
+	CU_pSuite pSuite = CU_add_suite("Suitekim2", suitekim2_init_gitmod, NULL);
 	if (pSuite != NULL) {
 		// did work
-		if (!(CU_add_test(pSuite, "Suitekim2: pullTwoDifferentObjectsMarkForDeletionDisposeOfThem", suitekim_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem) &&
-			CU_add_test(pSuite, "Suitekim2: pullTwiceSameObjectMarkForDeletionDisposeOfThem", suitekim_testPullTwiceSameObjectMarkForDeletionDisposeOfThem)
+		if (!(CU_add_test(pSuite, "Suitekim2: pullTwoDifferentObjectsMarkForDeletionDisposeOfThem", suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem) &&
+			CU_add_test(pSuite, "Suitekim2: pullTwiceSameObjectMarkForDeletionDisposeOfThem", suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem)
 		)) {
 			return NULL;
 		}

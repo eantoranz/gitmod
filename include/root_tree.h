@@ -28,7 +28,7 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree ** root_tree);
 /**
  * When we call this method, it is assumed the its usage counter has already been increased
  */
-gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * tree, const char * path);
+gitmod_object * gitmod_root_tree_get_object(gitmod_info * info, gitmod_root_tree * tree, const char * path);
 
 /**
  * Pass in the _current_ root tree.
