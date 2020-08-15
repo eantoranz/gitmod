@@ -26,6 +26,6 @@ void gitmod_object_dispose(gitmod_object ** object);
 /**
  * Used on objects that are _trees_
  */
-gitmod_object * gitmod_object_get_tree_entry(gitmod_root_tree * root_tree, gitmod_object * tree, int index);
+gitmod_object * gitmod_object_get_tree_entry(gitmod_info * info, gitmod_root_tree * root_tree, gitmod_object * tree, int index);
 
 #endif

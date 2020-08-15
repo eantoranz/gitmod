@@ -106,7 +106,7 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
 	}
 }
 
-static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_entry * git_entry)
+static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(gitmod_info * info, git_tree_entry * git_entry)
 {
 	gitmod_object * object = calloc(1, sizeof(gitmod_object));
 	if (!object)
@@ -117,10 +117,10 @@ static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_
 	int ret;
 	switch (otype) {
 	case GIT_OBJ_BLOB:
-		ret = git_tree_entry_to_object((git_object **) &object->blob, gitmod_info.repo, git_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->blob, info->repo, git_entry);
 		break;
 	case GIT_OBJ_TREE:
-		ret = git_tree_entry_to_object((git_object **) &object->tree, gitmod_info.repo, git_entry);
+		ret = git_tree_entry_to_object((git_object **) &object->tree, info->repo, git_entry);
 		break;
 	default:
 		ret = -ENOENT;
@@ -130,7 +130,7 @@ static gitmod_object * gitmod_root_tree_get_object_from_git_tree_entry(git_tree_
 	return object;
 }
 
-gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const char * orig_path)
+gitmod_object * gitmod_root_tree_get_object(gitmod_info * info, gitmod_root_tree * root_tree, const char * orig_path)
 {
 	int ret = 0;
 	gitmod_object * object = NULL;
@@ -174,7 +174,7 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_root_tree * root_tree, const 
 			goto end;
 		}
 		
-		object = gitmod_root_tree_get_object_from_git_tree_entry(tree_entry);
+		object = gitmod_root_tree_get_object_from_git_tree_entry(info, tree_entry);
 	}
 	if (cached_item)
 		gitmod_cache_item_set(cached_item, object); // so that the item can be used

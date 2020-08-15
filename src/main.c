@@ -27,6 +27,8 @@ static struct options {
 	int keep_in_memory;
 } options;
 
+gitmod_info * gm_info;
+
 #define OPTION(t, p) \
 	{ t, offsetof(struct options, p), 1 }
 
@@ -51,8 +53,8 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn,
 	if (options.debug)
 		printf("Running gitmod_init(...)\n");
 	cfg->kernel_cache = options.fix;
-        gitmod_info.uid = cfg->set_uid;
-	gitmod_info.gid = cfg->set_gid;
+        gm_info->uid = cfg->set_uid;
+	gm_info->gid = cfg->set_gid;
         return NULL;
 }
 
@@ -73,11 +75,11 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	}
 
         memset(stbuf, 0, sizeof(struct stat));
-	stbuf->st_atime = gitmod_info.root_tree->time;
-	stbuf->st_ctime = gitmod_info.root_tree->time;
-	stbuf->st_mtime = gitmod_info.root_tree->time;
-	stbuf->st_uid = gitmod_info.uid;
-	stbuf->st_gid = gitmod_info.gid;
+	stbuf->st_atime = gm_info->root_tree->time;
+	stbuf->st_ctime = gm_info->root_tree->time;
+	stbuf->st_mtime = gm_info->root_tree->time;
+	stbuf->st_uid = gm_info->uid;
+	stbuf->st_gid = gm_info->gid;
 	stbuf->st_nlink = gitmod_object_get_num_entries(object);
 	enum gitmod_object_type object_type = gitmod_object_get_type(object);
         if (object_type == GITMOD_OBJECT_TREE) { // this will depend on the type of object
@@ -236,9 +238,10 @@ int main(int argc, char *argv[])
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
         } else {
-		gitmod_info.fix = options.fix;
-		gitmod_info.keep_in_memory = options.keep_in_memory;
-		gitmod_info.root_tree_delay = options.root_tree_delay;
+		gm_info = gitmod_get_info();
+		gm_info->fix = options.fix;
+		gm_info->keep_in_memory = options.keep_in_memory;
+		gm_info->root_tree_delay = options.root_tree_delay;
 		ret = gitmod_init(options.repo_path, options.treeish);
 
 		if (ret)

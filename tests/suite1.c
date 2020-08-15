@@ -11,17 +11,20 @@
 #include <string.h>
 #include <CUnit/Basic.h>
 
+static gitmod_info * gm_info;
+
 static int suite1_init_gitmod()
 {
+	gm_info = gitmod_get_info();
 	return gitmod_init(".", "583510cd3ae56e");
 }
 
 static void suite1_testRevisionInfo()
 {
-	fprintf(stderr, "Revision time: %ld\n", gitmod_info.root_tree->time);
-	CU_ASSERT(gitmod_info.root_tree->time == 1593046557);
-	CU_ASSERT(gitmod_info.treeish_type == GIT_OBJ_COMMIT);
-	CU_ASSERT(gitmod_info.root_tree->objects_cache == NULL);
+	fprintf(stderr, "Revision time: %ld\n", gm_info->root_tree->time);
+	CU_ASSERT(gm_info->root_tree->time == 1593046557);
+	CU_ASSERT(gm_info->treeish_type == GIT_OBJ_COMMIT);
+	CU_ASSERT(gm_info->root_tree->objects_cache == NULL);
 }
 
 static void suite1_testGetRootTree()
