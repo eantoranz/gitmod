@@ -92,17 +92,17 @@ void gitmod_root_tree_increase_usage(gitmod_root_tree * root_tree)
 	gitmod_unlock(root_tree->lock);
 }
 
-void gitmod_root_tree_decrease_usage(gitmod_root_tree * root_tree)
+void gitmod_root_tree_decrease_usage(gitmod_root_tree ** root_tree)
 {
-	if (!root_tree)
+	if (!(root_tree && *root_tree))
 		return;
 	int delete_root_tree;
-	gitmod_lock(root_tree->lock);
-	root_tree->usage_counter--;
-	delete_root_tree = root_tree->marked_for_deletion && root_tree->usage_counter <= 0;
-	gitmod_unlock(root_tree->lock);
+	gitmod_lock((*root_tree)->lock);
+	(*root_tree)->usage_counter--;
+	delete_root_tree = (*root_tree)->marked_for_deletion && (*root_tree)->usage_counter <= 0;
+	gitmod_unlock((*root_tree)->lock);
 	if (delete_root_tree) {
-		gitmod_root_tree_dispose(&root_tree);
+		gitmod_root_tree_dispose(root_tree);
 	}
 }
 
@@ -176,11 +176,17 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_info * info, gitmod_root_tree
 		
 		object = gitmod_root_tree_get_object_from_git_tree_entry(info, tree_entry);
 	}
-	if (cached_item)
-		gitmod_cache_item_set(cached_item, object); // so that the item can be used
 end:
-	if (object && !object->path)
-		object->path = strdup(path);
+	if (cached_item) {
+		gitmod_root_tree_increase_usage(root_tree); // one more item using this root_tree
+		gitmod_cache_item_set(cached_item, object); // so that the item can be used
+	}
+        if (object) {
+		if (!object->path)
+			object->path = strdup(path);
+		if (!object->root_tree)
+			object->root_tree = root_tree;
+	}
 	if (orig_path != path)
 		free(path);
 	if (tree_entry)
@@ -188,11 +194,25 @@ end:
 	return object;
 }
 
-void gitmod_root_tree_dispose_object(gitmod_root_tree * tree, gitmod_object ** object)
+int gitmod_root_tree_dispose_object(gitmod_object ** object)
 {
-	if (!(tree && tree->objects_cache))
+	if (!(object && *object))
+		// nothing to do
+		return 0;
+	
+	gitmod_root_tree * root_tree = (*object)->root_tree;
+	// if the object is not cached, we can dispose of it direcly
+	if (!root_tree->objects_cache) {
 		// objects are not cached
 		gitmod_object_dispose(object);
+		return 0;
+	}
 	
-	// objects are cached so won't dispose of it
+	// there's some caching involved
+	
+	gitmod_root_tree_decrease_usage(&root_tree); // this might get rid of EVERYTHING
+	if (!root_tree)
+		// root_tree has been disposed of (including the objects inside)
+		*object = NULL;
+	return (!root_tree);
 }

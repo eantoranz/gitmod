@@ -21,13 +21,28 @@ gitmod_info * gitmod_get_info();
 int gitmod_init(const char * repo_path, const char * treeish);
 
 /**
+ * Do all things needed when root tree changes.
+ * 
+ * It is assumed that gitmod_info.lock is _locked_.
+ * It will be unlocked as soon as the new_tree is set up
+ * 
+ * This method is published so that we can test what happens when the root tree moves
+ * 
+ * Will return if the old tree was deleted at this moment
+ */
+int gitmod_root_tree_changed(gitmod_root_tree * new_tree);
+
+/**
  * Get the object associated with this path
  */
 gitmod_object * gitmod_get_object(const char * path);
 
 gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index);
 
-void gitmod_dispose_object(gitmod_object ** object);
+/**
+ * Will return if the tree associated to the object was deleted
+ */
+int gitmod_dispose_object(gitmod_object ** object);
 
 int gitmod_get_mode(gitmod_object * object);
 

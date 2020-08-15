@@ -40,20 +40,21 @@ typedef struct {
 
 typedef struct {
 	git_tree * tree;
-	git_blob * blob;
-	char * name; // local name, _not_ fullpath
-	char * path; // full path
-	int mode;
-} gitmod_object;
-
-typedef struct {
-	git_tree * tree;
 	time_t time;
 	gitmod_locker * lock;
 	int usage_counter;
 	int marked_for_deletion;
 	gitmod_cache * objects_cache; // gitmod_objects will be held by PATH
 } gitmod_root_tree;
+
+typedef struct {
+	git_tree * tree;
+	git_blob * blob;
+	char * name; // local name, _not_ fullpath
+	char * path; // full path
+	int mode;
+	gitmod_root_tree * root_tree; // tree that was used to associate this object
+} gitmod_object;
 
 typedef struct {
 	git_repository * repo;

@@ -169,7 +169,7 @@ gitmod_object * gitmod_get_object(const char *path)
 	gitmod_root_tree_increase_usage(info.root_tree); // it will get a lock and release it for increasign counter
 	gitmod_unlock(info.lock);
 	object = gitmod_root_tree_get_object(&info, info.root_tree, path);
-	gitmod_root_tree_decrease_usage(info.root_tree);
+	gitmod_root_tree_decrease_usage(&info.root_tree);
 	return object;
 }
 
@@ -178,13 +178,9 @@ gitmod_object * gitmod_get_tree_entry(gitmod_object * tree, int index)
 	return gitmod_object_get_tree_entry(&info, info.root_tree, tree, index);
 }
 
-void gitmod_dispose_object(gitmod_object ** object)
+int gitmod_dispose_object(gitmod_object ** object)
 {
-	/**
-	 * TODO how can we make sure that the object is coming from this tree?
-	 * Might need to associate the object to its tree
-	 */
-	gitmod_root_tree_dispose_object(info.root_tree, object);
+	return gitmod_root_tree_dispose_object(object);
 }
 
 void gitmod_shutdown()
@@ -201,6 +197,22 @@ void gitmod_shutdown()
 	git_libgit2_shutdown();
 }
 
+int gitmod_root_tree_changed(gitmod_root_tree * new_tree)
+{
+	printf("root tree changed\n");
+	gitmod_root_tree * old_tree = info.root_tree;
+	info.root_tree = new_tree;
+	gitmod_unlock(info.lock);
+	gitmod_lock(old_tree->lock);
+	// set it for deletion right away
+	old_tree->marked_for_deletion = 1;
+	int delete_root_tree = old_tree->usage_counter <= 0; // not decreasing, just checking how many resources are out
+	gitmod_unlock(old_tree->lock);
+	if (delete_root_tree)
+		gitmod_root_tree_dispose(&old_tree);
+	return delete_root_tree;
+}
+
 static void gitmod_root_tree_monitor_task()
 {
 	time_t revision_time;
@@ -212,25 +224,14 @@ static void gitmod_root_tree_monitor_task()
 			
 			gitmod_root_tree * old_tree = info.root_tree;
 			
-			// now we are the only one watching the old tree
-			if (git_oid_cmp(git_tree_id(old_tree->tree), git_tree_id(new_tree))) {
-				printf("root tree changed\n");
+			// now we are the only ones watching the old tree, let's check again
+			if (git_oid_cmp(git_tree_id(old_tree->tree), git_tree_id(new_tree)))
 				// it did change, indeed
 				// we can replace the old tree with the new one and let it run normally
-				info.root_tree = gitmod_root_tree_create(new_tree, revision_time, info.keep_in_memory);
-			}
-			
-			gitmod_unlock(info.lock); // no need to make anybody wait, the new tree can be used from now on
-			
-			if (old_tree->tree != new_tree) {
-				gitmod_lock(old_tree->lock);
-				// set it for deletion right away
-				old_tree->marked_for_deletion = 1;
-				int delete_root_tree = old_tree->usage_counter == 0;
-				gitmod_unlock(old_tree->lock);
-				if (delete_root_tree)
-					gitmod_root_tree_dispose(&old_tree);
-			}
+				// this will take care of unlocking
+				gitmod_root_tree_changed(gitmod_root_tree_create(new_tree, revision_time, info.keep_in_memory));
+			else
+				gitmod_unlock(info.lock); // no need to make anybody wait, the new tree can be used from now on
 		} else
 			git_tree_free(new_tree);
 	}
