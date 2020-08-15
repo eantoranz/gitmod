@@ -114,6 +114,11 @@ static void gitmod_root_tree_monitor_task();
 
 int gitmod_init(const char * repo_path, const char * treeish)
 {
+#ifdef GITMOD_DEBUG
+	printf("Starting gitmod (debug compilation)\n");
+#else
+	printf("Starting gitmod\n");
+#endif
 	int ret;
 
 	// save the treeish
@@ -127,7 +132,9 @@ int gitmod_init(const char * repo_path, const char * treeish)
 		goto end;
 	}
 
+#ifdef GITMOD_DEBUG
 	printf("Successfully opened repo at %s\n", git_repository_commondir(info.repo));
+#endif
 	time_t revision_time;
 	git_tree * git_root_tree = gitmod_get_root_tree(&revision_time);
 	if (!git_root_tree) {
@@ -140,7 +147,11 @@ int gitmod_init(const char * repo_path, const char * treeish)
 		fprintf(stderr, "Could not set up root tree instance\n");
 		return -ENOENT;
 	}
+#ifdef GITMOD_DEBUG
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
+#else
+	printf("Gitmod is ready\n");
+#endif
 	
 	info.root_tree = root_tree;
 	if (!info.fix) {
@@ -152,8 +163,11 @@ int gitmod_init(const char * repo_path, const char * treeish)
 		info.root_tree_monitor = gitmod_thread_create(gitmod_root_tree_monitor_task, info.root_tree_delay);
 		if (!info.root_tree_monitor)
 			fprintf(stderr, "Could not create root tree monitor. Will be fixed on the starting root tree\n");
-	} else
+	} else {
+#ifdef GITMOD_DEBUG
 		printf("Root tree will be fixed\n");
+#endif
+	}
 end:
 	return ret;
 }
@@ -165,11 +179,7 @@ gitmod_object * gitmod_get_object(const char *path)
 		return NULL;
 	}
 	// Will make sure to be the only one looking at the root_tree
-	gitmod_lock(info.lock);
-	gitmod_root_tree_increase_usage(info.root_tree); // it will get a lock and release it for increasign counter
-	gitmod_unlock(info.lock);
 	object = gitmod_root_tree_get_object(&info, info.root_tree, path);
-	gitmod_root_tree_decrease_usage(&info.root_tree);
 	return object;
 }
 

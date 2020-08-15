@@ -3,6 +3,9 @@
 
 CC=gcc
 CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
+ifdef DEBUG
+	CFLAGS+=-DGITMOD_DEBUG
+endif
 CFLAGSTEST=-lcunit -Itests
 
 default: gitmod test

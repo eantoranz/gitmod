@@ -34,7 +34,7 @@ gitmod_object * gitmod_root_tree_get_object(gitmod_info * info, gitmod_root_tree
  * Pass in the _current_ root tree.
  * The object's root tree will be asked to decrease its usage
  * 
- * WIll return if the object's root_tree was deleted
+ * Will return if the object's root_tree was deleted
  */
 int gitmod_root_tree_dispose_object(gitmod_object ** object);
 

@@ -118,7 +118,6 @@ const void * gitmod_cache_item_get(gitmod_cache_item * item)
 void gitmod_cache_dispose(gitmod_cache ** cache)
 {
 	if (*cache) {
-		printf("Disposing of cache\n");
 		g_hash_table_destroy((*cache)->items);
 		gitmod_locker_dispose(&(*cache)->locker);
 		free(*cache);
