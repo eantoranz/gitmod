@@ -2,11 +2,14 @@
 # Released under the terms of GPLv2
 
 CC=gcc
-CFLAGS=-g -Wall -Iinclude `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
+CFLAGS=-Iinclude `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
 ifdef DEBUG
 	CFLAGS+=-DGITMOD_DEBUG
 endif
-CFLAGSTEST=-lcunit -Itests
+ifdef DEVELOPER
+	CFLAGS+=-Wall -g
+endif
+CFLAGSTEST=$(CFLAGS) -lcunit -Itests
 
 default: gitmod test
 
@@ -32,7 +35,7 @@ gitmod: src/main.c gitmod.o
 	$(CC) $< *.o -o gitmod $(CFLAGS)
 
 test: tests/test.c tests/suite*.c gitmod.o
-	$(CC) $< tests/suite*.c *.o -o test $(CFLAGS) $(CFLAGSTEST)
+	$(CC) $< tests/suite*.c *.o -o test $(CFLAGSTEST)
 
 clean:
 	rm test gitmod *.o
