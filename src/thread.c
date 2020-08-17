@@ -6,27 +6,33 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "thread.h"
+#include "types.h"
 
 static void * thread_task(void * params)
 {
 	gitmod_thread * thread = params;
 	while (thread->run_thread) {
-		thread->task();
+		thread->task(thread);
 		usleep(thread->delay * 1000); // sleep for a millisecond (or 10) and loop over so that it doesn't _hang_ (like when closing the application)
 	}
 	return NULL;
 }
 
-gitmod_thread * gitmod_thread_create(void (*task)(), int delay)
+gitmod_thread * gitmod_thread_create(gitmod_info * info, void (*task)(gitmod_thread *), int delay)
 {
+	if (!info)
+		return NULL;
 	gitmod_thread * thread = calloc(1, sizeof(gitmod_thread));
 	if (thread) {
 		thread->delay = delay;
 		thread->task = task;
 		thread->run_thread = 1;
+		thread->payload = info;
 		int res = pthread_create(&thread->thread, NULL, thread_task, thread);
 		if (res) {
+			printf("Hubo un fallo en el pthread_create. Res: %d\n", res);
 			free(thread);
 			thread = NULL;
 		}

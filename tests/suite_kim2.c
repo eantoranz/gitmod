@@ -12,16 +12,22 @@
 
 static gitmod_info * gm_info;
 
-static int suitekim2_init_gitmod()
+static int suitekim2_init()
 {
-	gm_info = gitmod_get_info();
-	gm_info->keep_in_memory = 1;
+	gitmod_init();
+	gm_info = calloc(1, sizeof(gitmod_info));
+	return 0;
+}
+
+static int suitekim2_shutdown()
+{
+	gitmod_shutdown();
+	free(gm_info);
 	return 0;
 }
 
 static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -61,12 +67,10 @@ static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 		}
 		git_repository_free(gm_info->repo);
 	}
-	git_libgit2_shutdown();
 }
 
 static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -106,12 +110,10 @@ static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 		}
 		git_repository_free(gm_info->repo);
 	}
-	git_libgit2_shutdown();
 }
 
 static void suitekim2_treeMovesNoObjectInUse()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -131,7 +133,7 @@ static void suitekim2_treeMovesNoObjectInUse()
 					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
 					CU_ASSERT(root_tree2 != NULL);
 					gitmod_lock(gm_info->lock);
-					ret = gitmod_root_tree_changed(root_tree2);
+					ret = gitmod_root_tree_changed(gm_info, root_tree2);
 					CU_ASSERT(ret != 0); // original root tree was deleted
 					CU_ASSERT(gm_info->root_tree == root_tree2);
 					if (!ret) {
@@ -143,12 +145,10 @@ static void suitekim2_treeMovesNoObjectInUse()
 			}
 		}
 	}
-	git_libgit2_shutdown();
 }
 
 static void suitekim2_treeMoves1ObjectInUse()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -173,7 +173,7 @@ static void suitekim2_treeMoves1ObjectInUse()
 					gitmod_root_tree * root_tree2 = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
 					CU_ASSERT(root_tree2 != NULL);
 					gitmod_lock(gm_info->lock);
-					ret = gitmod_root_tree_changed(root_tree2);
+					ret = gitmod_root_tree_changed(gm_info, root_tree2);
 					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
 					CU_ASSERT(gm_info->root_tree == root_tree2);
 					// when we drop the object, original tree should be killed
@@ -188,12 +188,10 @@ static void suitekim2_treeMoves1ObjectInUse()
 			}
 		}
 	}
-	git_libgit2_shutdown();
 }
 
 static void suitekim2_treeMoves1ObjectInUseTwice()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -225,7 +223,7 @@ static void suitekim2_treeMoves1ObjectInUseTwice()
 					CU_ASSERT(root_tree2 != NULL);
 					gitmod_lock(gm_info->lock);
 					CU_ASSERT(root_tree->usage_counter == 2);
-					ret = gitmod_root_tree_changed(root_tree2);
+					ret = gitmod_root_tree_changed(gm_info, root_tree2);
 					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
 					CU_ASSERT(gm_info->root_tree == root_tree2);
 					CU_ASSERT(root_tree->usage_counter == 2);
@@ -244,12 +242,10 @@ static void suitekim2_treeMoves1ObjectInUseTwice()
 			}
 		}
 	}
-	git_libgit2_shutdown();
 }
 
 static void suitekim2_treeMoves2ObjectsInUse()
 {
-	git_libgit2_init();
 	int ret = git_repository_open(&gm_info->repo, ".");
 	CU_ASSERT(!ret);
 	if (!ret) {
@@ -281,7 +277,7 @@ static void suitekim2_treeMoves2ObjectsInUse()
 					CU_ASSERT(root_tree2 != NULL);
 					gitmod_lock(gm_info->lock);
 					CU_ASSERT(root_tree->usage_counter == 2);
-					ret = gitmod_root_tree_changed(root_tree2);
+					ret = gitmod_root_tree_changed(gm_info, root_tree2);
 					CU_ASSERT(!ret); // original root tree _not_ was deleted because the object is still in use
 					CU_ASSERT(gm_info->root_tree == root_tree2);
 					CU_ASSERT(root_tree->usage_counter == 2);
@@ -300,12 +296,11 @@ static void suitekim2_treeMoves2ObjectsInUse()
 			}
 		}
 	}
-	git_libgit2_shutdown();
 }
 
 CU_pSuite suitekim2_setup()
 {
-	CU_pSuite pSuite = CU_add_suite("Suitekim2", suitekim2_init_gitmod, NULL);
+	CU_pSuite pSuite = CU_add_suite("Suitekim2", suitekim2_init, suitekim2_shutdown);
 	if (pSuite != NULL) {
 		// did work
 		if (!(CU_add_test(pSuite, "Suitekim2: pullTwoDifferentObjectsMarkForDeletionDisposeOfThem", suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem) &&

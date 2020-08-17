@@ -21,6 +21,7 @@ typedef struct {
 	pthread_t thread; // pthread instance
 	int run_thread;
 	int delay; // delay in milliseconds (0 means it's a tight loop). Default will be set to 100
+	void * payload;
 } gitmod_thread;
 
 typedef struct {
@@ -65,9 +66,6 @@ typedef struct {
 	int uid; // provided by fuse
 	gitmod_locker * lock;
 	gitmod_thread * root_tree_monitor;
-	int root_tree_delay; // in milliseconds (0 is a tight loop)
-	int fix; // use to not track changes in root tree
-	int keep_in_memory;
 } gitmod_info;
 
 #endif

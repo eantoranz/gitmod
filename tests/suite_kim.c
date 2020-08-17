@@ -14,11 +14,18 @@
 
 static gitmod_info * gm_info;
 
-static int suitekim_init_gitmod()
+static int suitekim_init()
 {
-	gm_info = gitmod_get_info();
-	gm_info->keep_in_memory = 1;
-	return gitmod_init(".", "583510cd3ae56e");
+	gitmod_init();
+	gm_info = gitmod_start(".", "583510cd3ae56e", GITMOD_OPTION_KEEP_IN_MEMORY, 100);
+	return gm_info == NULL;
+}
+
+static int suitekim_shutdown()
+{
+	gitmod_stop(&gm_info);
+	gitmod_shutdown();
+	return 0;
 }
 
 static void suitekim_testRevisionInfo()
@@ -32,7 +39,7 @@ static void suitekim_testRevisionInfo()
 
 static void suitekim_testGetRootTree()
 {
-	gitmod_object * root_tree = gitmod_get_object("/");
+	gitmod_object * root_tree = gitmod_get_object(gm_info, "/");
 	CU_ASSERT(root_tree != NULL);
 	CU_ASSERT(gm_info->root_tree->usage_counter == 1);
 	if (root_tree) {
@@ -44,7 +51,7 @@ static void suitekim_testGetRootTree()
 		// let's check the names of each one of the entries
 		gitmod_object * entry;
 		for (int i=0; i < num_items; i++) {
-			entry = gitmod_get_tree_entry(root_tree, i);
+			entry = gitmod_get_tree_entry(gm_info, root_tree, i);
 			CU_ASSERT(entry != NULL);
 			if (entry) {
 				char * name = gitmod_object_get_name(entry);
@@ -110,7 +117,7 @@ static void suitekim_testGetRootTree()
 			}
 		}
 		// if we go over the board, we get NULL
-		CU_ASSERT(gitmod_get_tree_entry(root_tree, 999) == NULL);
+		CU_ASSERT(gitmod_get_tree_entry(gm_info, root_tree, 999) == NULL);
 
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree != NULL);
@@ -120,7 +127,7 @@ static void suitekim_testGetRootTree()
 
 static void suitekim_testGetObjectByPathBlob()
 {
-	gitmod_object * object = gitmod_get_object("/tests/test.c");
+	gitmod_object * object = gitmod_get_object(gm_info, "/tests/test.c");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
@@ -143,7 +150,7 @@ static void suitekim_testGetObjectByPathBlob()
 
 static void suitekim_testGetExecObjectByPathBlob()
 {
-	gitmod_object * object = gitmod_get_object("/build.sh");
+	gitmod_object * object = gitmod_get_object(gm_info, "/build.sh");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
@@ -166,7 +173,7 @@ static void suitekim_testGetExecObjectByPathBlob()
 
 static void suitekim_testGetObjectByPathTree()
 {
-	gitmod_object * object = gitmod_get_object("tests");
+	gitmod_object * object = gitmod_get_object(gm_info, "tests");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
@@ -182,21 +189,14 @@ static void suitekim_testGetObjectByPathTree()
 
 static void suitekim_testGetNonExistingObjectByPath()
 {
-	gitmod_object * object = gitmod_get_object("blahblah");
+	gitmod_object * object = gitmod_get_object(gm_info, "blahblah");
 	CU_ASSERT(object == NULL);
 	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
 }
 
-static int suitekim_shutdown_gitmod()
-{
-	gitmod_shutdown();
-	gm_info->keep_in_memory = 0;
-	return 0;
-}
-
 CU_pSuite suitekim_setup()
 {
-	CU_pSuite pSuite = CU_add_suite("Suitekim", suitekim_init_gitmod, suitekim_shutdown_gitmod);
+	CU_pSuite pSuite = CU_add_suite("Suitekim", suitekim_init, suitekim_shutdown);
 	if (pSuite != NULL) {
 		// did work
 		if (!(CU_add_test(pSuite, "Suitekim: test revision info", suitekim_testRevisionInfo) &&

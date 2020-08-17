@@ -68,7 +68,7 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf,
 	if (options.debug)
 		printf("Running gitmod_getattr(\"%s\", ...)\n", path);
 
-	gitmod_object * object = gitmod_get_object(path);
+	gitmod_object * object = gitmod_get_object(gm_info, path);
 	if (!object) {
 		fprintf(stderr, "gitmod_getattr: Could not find an object for path %s\n", path);
 		return -ENOENT;
@@ -107,7 +107,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	if (options.debug)
 		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
 
-	gitmod_object * dir_node = gitmod_get_object(path);
+	gitmod_object * dir_node = gitmod_get_object(gm_info, path);
         if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
 		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
 		if (dir_node)
@@ -120,7 +120,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 	int num_items = gitmod_object_get_num_entries(dir_node);
 	gitmod_object * entry;
 	for (int i=0; i < num_items; i++) {
-		entry = gitmod_get_tree_entry(dir_node, i);
+		entry = gitmod_get_tree_entry(gm_info, dir_node, i);
 		if (entry) {
 			char * name = gitmod_object_get_name(entry);
 			if (name)
@@ -136,7 +136,7 @@ static int gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler
 static int gitmod_fs_open(const char * path, struct fuse_file_info *fi)
 {
 	int ret = 0;
-	gitmod_object * object = gitmod_get_object(path);
+	gitmod_object * object = gitmod_get_object(gm_info, path);
 	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
 		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
 		if (object)
@@ -177,6 +177,7 @@ static void gitmod_fs_destroy()
 {
 	if (options.debug)
 		printf("Running gitmod_destroy()\n");
+	gitmod_stop(&gm_info);
 	gitmod_shutdown();
 
 }
@@ -214,7 +215,7 @@ static void show_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-        int ret;
+        int ret = 0;
         struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
         /* Set defaults -- we have to use strdup so that
@@ -238,14 +239,16 @@ int main(int argc, char *argv[])
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
         } else {
-		gm_info = gitmod_get_info();
-		gm_info->fix = options.fix;
-		gm_info->keep_in_memory = options.keep_in_memory;
-		gm_info->root_tree_delay = options.root_tree_delay;
-		ret = gitmod_init(options.repo_path, options.treeish);
+		gitmod_init();
+		int gm_options = options.keep_in_memory ? GITMOD_OPTION_KEEP_IN_MEMORY : 0;
+		gm_options |= (options.fix ? GITMOD_OPTION_FIX : 0);
+		gm_info = gitmod_start(options.repo_path, options.treeish, gm_options, options.root_tree_delay);
 
-		if (ret)
+		if (!gm_info) {
+			fprintf(stderr, "Could not setup gitmod\n");
 			gitmod_shutdown();
+			ret = 1;
+		}
 	}
 	
 	if (!ret)
