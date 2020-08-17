@@ -6,7 +6,7 @@
 #ifndef GITMOD_CACHE_H
 #define GITMOD_CACHE_H
 
-#include <types.h>
+#include "gitmod/types.h"
 
 gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_notify, GDestroyNotify value_destroy_notify);
 

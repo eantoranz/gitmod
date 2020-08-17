@@ -7,11 +7,12 @@
 #define GITMOD_H
 
 #include <git2.h>
-#include "object.h"
-#include "types.h"
-#include "lock.h"
-#include "root_tree.h"
-#include "thread.h"
+#include "gitmod/object.h"
+#include "gitmod/types.h"
+#include "gitmod/lock.h"
+#include "gitmod/root_tree.h"
+#include "gitmod/thread.h"
+#include "gitmod/cache.h"
 
 #define GITMOD_OPTION_FIX 1
 #define GITMOD_OPTION_KEEP_IN_MEMORY 1<<1

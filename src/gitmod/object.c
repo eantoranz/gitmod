@@ -7,7 +7,7 @@
 #include <git2.h>
 #include <errno.h>
 #include <string.h>
-#include "object.h"
+#include "gitmod/object.h"
 #include "gitmod.h"
 
 enum gitmod_object_type gitmod_object_get_type(gitmod_object * object)

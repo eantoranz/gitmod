@@ -6,7 +6,6 @@
  *  Make sure of the kinds of objects we can use as treeish
  */
 
-#include "object.h"
 #include "gitmod.h"
 #include <CUnit/Basic.h>
 

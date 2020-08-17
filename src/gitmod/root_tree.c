@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include "types.h"
-#include "lock.h"
-#include "object.h"
+#include "gitmod/types.h"
+#include "gitmod/lock.h"
+#include "gitmod/object.h"
 #include "gitmod.h"
-#include "cache.h"
+#include "gitmod/cache.h"
 
 static int gitmod_tree_walk(const char *root, const git_tree_entry *entry, void *payload)
 {

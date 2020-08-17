@@ -8,9 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <CUnit/Basic.h>
-#include "object.h"
 #include "gitmod.h"
-#include "cache.h"
 
 static gitmod_info * gm_info;
 

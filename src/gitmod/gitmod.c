@@ -11,9 +11,9 @@
 #include <unistd.h>
 #include <time.h>
 #include "gitmod.h"
-#include "lock.h"
-#include "root_tree.h"
-#include "thread.h"
+#include "gitmod/lock.h"
+#include "gitmod/root_tree.h"
+#include "gitmod/thread.h"
 
 #if LIBGIT2_SOVERSION < 28 // old implementation
 #define GIT2_OBJECT_TREE GIT_OBJ_TREE

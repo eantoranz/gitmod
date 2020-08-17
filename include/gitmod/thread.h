@@ -6,7 +6,7 @@
 #ifndef GITMOD_THREAD_H
 #define GITMOD_THREAD_H
 
-#include "types.h"
+#include "gitmod/types.h"
 
 /**
  * Crete and start the thread.

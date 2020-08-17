@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "thread.h"
-#include "types.h"
+#include "gitmod/thread.h"
+#include "gitmod/types.h"
 
 static void * thread_task(void * params)
 {

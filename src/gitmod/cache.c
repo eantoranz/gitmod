@@ -5,9 +5,9 @@
 
 #include <stdio.h>
 #include <glib.h>
-#include "cache.h"
-#include "lock.h"
-#include "object.h"
+#include "gitmod/cache.h"
+#include "gitmod/lock.h"
+#include "gitmod/object.h"
 
 gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {

@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <fuse.h>
-#include "object.h"
 #include "gitmod.h"
 
 static struct options {
