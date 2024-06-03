@@ -15,12 +15,6 @@
 #include "gitmod/root_tree.h"
 #include "gitmod/thread.h"
 
-#if LIBGIT2_SOVERSION < 28 // old implementation
-#define GIT2_OBJECT_TREE GIT_OBJ_TREE
-#else // new implementation
-#define GIT2_OBJECT_TREE GIT_OBJECT_TREE
-#endif
-
 static int gitmod_started = 0;
 
 int gitmod_init()
@@ -124,7 +118,7 @@ static git_tree * gitmod_get_root_tree(gitmod_info * info, time_t * revision_tim
 		*revision_time = git_commit_time((git_commit *) treeish);
 	}
 end:
-	if (info->treeish_type != GIT2_OBJECT_TREE)
+	if (info->treeish_type != GIT_OBJECT_TREE)
 		git_object_free(treeish);
 	
 	return root_tree;

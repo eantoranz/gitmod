@@ -26,7 +26,7 @@ Run:
 
     make
 
-That will generate a binary called gitmod
+That will generate a binary called `gitmod`
 
 ## Options:
 It supports the standard options provided by [FUSE](https://github.com/libfuse/libfuse).
@@ -57,8 +57,14 @@ You can run **make** like this to compile with debug output information
 This will make gitmod send information to stdout when running.
 **Important**: might require running **gitmod** with FUSE option **-f** so that the process does not go into the background.
 
+## building packages
+
+### debian
+There is a script called `scripts/build-debian` which can be used to build debian packages. It will use [Docker](https://hub.docker.com/_/debian)
+to build the package. Call the script without parameters to see what parameters it expects when you call it.
+
 ## Copyright / Licensing
-Copyright 2020 Edmundo Carmona Antoranz. Released under the terms of [GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
+Copyright 2020-2024 Edmundo Carmona Antoranz. Released under the terms of [GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
 
 ## IMPORTANT
 This is very alpha software at the moment so:
