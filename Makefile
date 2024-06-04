@@ -2,7 +2,7 @@
 # Released under the terms of GPLv2
 
 CC=gcc
-CFLAGS=-Iinclude `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
+CFLAGS=-Isrc/include `pkg-config fuse3 libgit2 glib-2.0 --cflags --libs`
 ifdef DEBUG
 	CFLAGS+=-DGITMOD_DEBUG
 endif
@@ -13,22 +13,22 @@ CFLAGSTEST=$(CFLAGS) -lcunit -Itests
 
 default: gitmod
 
-cache.o: src/gitmod/cache.c include/gitmod/cache.h
+cache.o: src/gitmod/cache.c src/include/gitmod/cache.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-object.o: src/gitmod/object.c include/gitmod/object.h
+object.o: src/gitmod/object.c src/include/gitmod/object.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-root_tree.o: src/gitmod/root_tree.c include/gitmod/root_tree.h
+root_tree.o: src/gitmod/root_tree.c src/include/gitmod/root_tree.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-thread.o: src/gitmod/thread.c include/gitmod/thread.h
+thread.o: src/gitmod/thread.c src/include/gitmod/thread.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-lock.o: src/gitmod/lock.c include/gitmod/lock.h
+lock.o: src/gitmod/lock.c src/include/gitmod/lock.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-gitmod.o: src/gitmod/gitmod.c include/gitmod.h lock.o root_tree.o thread.o object.o cache.o
+gitmod.o: src/gitmod/gitmod.c src/include/gitmod.h lock.o root_tree.o thread.o object.o cache.o
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
 gitmod: src/main.c gitmod.o
