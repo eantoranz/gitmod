@@ -1,4 +1,6 @@
 *.swp
-gitmod
+/gitmod
 test
 *.o
+*.tar.gz
+*.deb

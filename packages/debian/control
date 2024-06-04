@@ -1,0 +1,13 @@
+Source: gitmod
+Maintainer: Edmundo Carmona Antoranz <eantoranz@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 4.6.2
+Build-Depends: debhelper-compat (= 13),
+ libgit2-dev, libglib2.0-dev, libfuse3-dev
+
+Package: gitmod
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgit2-1.7, libfuse3-3, libglib2.0-0t64
+Description: fuse-based linux kernel module to display a treeish from a git repo
+ onto a monut point. The content displayed on the file system is read-only.

@@ -11,7 +11,7 @@ ifdef DEVELOPER
 endif
 CFLAGSTEST=$(CFLAGS) -lcunit -Itests
 
-default: gitmod test
+default: gitmod
 
 cache.o: src/gitmod/cache.c include/gitmod/cache.h
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
@@ -37,5 +37,9 @@ gitmod: src/main.c gitmod.o
 test: tests/test.c tests/suites.h tests/suite*.c gitmod.o
 	$(CC) $< tests/suite*.c src/gitmod/*.o -o $@ $(CFLAGSTEST)
 
+install:
+	mkdir -p $(DESTDIR)$(prefix)/bin
+	install gitmod $(DESTDIR)$(prefix)/bin
+
 clean:
-	rm test gitmod src/gitmod/*.o
+	rm -f test gitmod src/gitmod/*.o
