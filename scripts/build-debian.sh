@@ -11,11 +11,6 @@
 #
 # Parameters
 # - debian tag to use for building
-# - package version
-# - git committish that will be used to build
-#
-# environment variables:
-# - DEBIAN_TAG: debian docker tag used for building (default: stable)
 
 if [ $# -lt 1 ]; then
 	echo Not enough parameters. Need to provide:

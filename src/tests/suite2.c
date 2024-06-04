@@ -67,6 +67,7 @@ static void suite2_treeish_is_tag()
 
 CU_pSuite suite2_setup()
 {
+	git_libgit2_init();
 	CU_pSuite pSuite = CU_add_suite("Suite2", suite2_init, suite2_shutdown);
 	if (pSuite != NULL) {
 		// did work

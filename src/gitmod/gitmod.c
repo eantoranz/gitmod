@@ -137,7 +137,7 @@ gitmod_info * gitmod_start(const char * repo_path, const char * treeish, int opt
 	ret = git_repository_open(&info->repo, repo_path);
 	if (ret) {
 		// there was an error opening the repository
-		fprintf(stderr, "There was an error opening the git repo at %s\n", repo_path);
+		fprintf(stderr, "There was an error opening the git repo at %s: %s\n", repo_path, git_error_last()->message);
 		goto end;
 	}
 

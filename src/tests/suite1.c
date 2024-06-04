@@ -193,6 +193,7 @@ static void suite1_testGetNonExistingObjectByPath()
 
 CU_pSuite suite1_setup()
 {
+	git_libgit2_init();
 	CU_pSuite pSuite = CU_add_suite("Suite1", suite1_init, suite1_shutdown);
 	if (pSuite != NULL) {
 		// did work

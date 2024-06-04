@@ -34,8 +34,8 @@ gitmod.o: src/gitmod/gitmod.c include/gitmod.h lock.o root_tree.o thread.o objec
 gitmod: src/main.c gitmod.o
 	$(CC) $< src/gitmod/*.o -o $@ $(CFLAGS)
 
-test: tests/test.c tests/suites.h tests/suite*.c gitmod.o
-	$(CC) $< tests/suite*.c src/gitmod/*.o -o $@ $(CFLAGSTEST)
+test: src/tests/test.c src/tests/suites.h src/tests/suite*.c gitmod.o
+	$(CC) $< src/tests/suite*.c src/gitmod/*.o -o $@ $(CFLAGSTEST)
 
 install:
 	mkdir -p $(DESTDIR)$(prefix)/bin

@@ -194,6 +194,7 @@ static void suitekim_testGetNonExistingObjectByPath()
 
 CU_pSuite suitekim_setup()
 {
+	git_libgit2_init();
 	CU_pSuite pSuite = CU_add_suite("Suitekim", suitekim_init, suitekim_shutdown);
 	if (pSuite != NULL) {
 		// did work
