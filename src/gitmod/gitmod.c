@@ -118,7 +118,11 @@ static git_tree * gitmod_get_root_tree(gitmod_info * info, time_t * revision_tim
 		*revision_time = git_commit_time((git_commit *) treeish);
 	}
 end:
+#if LIBGIT2_VER_MAJOR == 0 && LIBGIT2_VER_MINOR < 28
+	if (info->treeish_type != GIT_OBJ_TREE)
+#else
 	if (info->treeish_type != GIT_OBJECT_TREE)
+#endif
 		git_object_free(treeish);
 	
 	return root_tree;
@@ -137,7 +141,11 @@ gitmod_info * gitmod_start(const char * repo_path, const char * treeish, int opt
 	ret = git_repository_open(&info->repo, repo_path);
 	if (ret) {
 		// there was an error opening the repository
+#if LIBGIT2_VER_MAJOR == 0 && LIBGIT2_VER_MINOR < 28
+		fprintf(stderr, "There was an error opening the git repo at %s: %s\n", repo_path, giterr_last()->message);
+#else
 		fprintf(stderr, "There was an error opening the git repo at %s: %s\n", repo_path, git_error_last()->message);
+#endif
 		goto end;
 	}
 

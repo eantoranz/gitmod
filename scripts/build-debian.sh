@@ -28,5 +28,6 @@ docker pull debian:$DEBIAN_TAG
 
 docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
 	-e REQUIREMENTS_FILE=scripts/debian/requirements.txt \
+	-e DEBIAN_TAG=$DEBIAN_TAG \
 	--name gitmod-debian-builder-$DEBIAN_TAG \
 	debian:$DEBIAN_TAG scripts/debian/builder.sh 
