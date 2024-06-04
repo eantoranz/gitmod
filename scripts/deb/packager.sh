@@ -22,7 +22,7 @@ cd gitmod-$VERSION
 mv packages/debian debian
 debuild -us -uc
 
-TARGET_DIR=packages/files/gitmod-$VERSION/debian/$DEBIAN_TAG
+TARGET_DIR=packages/files/gitmod-$VERSION/$DISTRO-$DOCKER_TAG
 
 if [ ! -d /mnt/work/$TARGET_DIR ]; then
 	mkdir -p /mnt/work/$TARGET_DIR
@@ -32,9 +32,9 @@ cp -v ../*.deb /mnt/work/$TARGET_DIR
 
 cd /mnt/work
 
-echo Finished building packages for debian $DEBIAN_TAG for gitmod version $VERSION from committish $COMMITTISH
+echo Finished building packages for $DISTRO $DOCKER_TAG for gitmod version $VERSION from committish $COMMITTISH
 echo Packages coming out of the build are in $TARGET_DIR:
 
 ls -l $TARGET_DIR
 
-echo Thanks for using gitmod debian packager.
+echo Thanks for using gitmod deb packager.

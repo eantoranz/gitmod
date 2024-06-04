@@ -7,11 +7,7 @@ set -ex
 
 # Script that will take care of doing the build process
 apt-get update
-if [ "$REQUIREMENTS_FILE" != "" ]; then
-	cat "$REQUIREMENTS_FILE" | xargs apt-get install -y build-essential git
-else
-	apt-get install -y build-essential git
-fi
+cat "$REQUIREMENTS_FILE" | xargs apt-get install -q -y build-essential git
 
 make clean
 make -j $( nproc )
