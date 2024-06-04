@@ -197,7 +197,7 @@ static void show_help(const char *progname)
         printf("usage: %s [options] <mountpoint>\n\n", progname);
         printf("File-system specific options:\n"
                "    --repo=<s>             Path to the git repo\n"
-               "                           (default: \".\", current directory)\n"
+               "                           (If none is provided, will exit gracefully)\n"
 	       "    --treeish=<s>          Treeish to use on the root of the mount point\n"
 	       "                           It can be a branch, a revision or a tag.\n"
 	       "                           (default: HEAD)\n"
@@ -220,7 +220,6 @@ int main(int argc, char *argv[])
         /* Set defaults -- we have to use strdup so that
            fuse_opt_parse can free the defaults if other
            values are specified */
-        options.repo_path = strdup(".");
 	options.treeish = strdup("HEAD");
 	options.root_tree_delay = ROOT_TREEE_MONITOR_DEFAULT_DELAY;
 
@@ -237,7 +236,10 @@ int main(int argc, char *argv[])
                 show_help(argv[0]);
                 assert(fuse_opt_add_arg(&args, "--help") == 0);
                 args.argv[0][0] = '\0';
-        } else {
+        } else if (!options.repo_path) {
+		fprintf(stderr, "No repo path provided. Provide it with --repo=<repo-path>.\n");
+		return 1;
+	} else {
 		gitmod_init();
 		int gm_options = options.keep_in_memory ? GITMOD_OPTION_KEEP_IN_MEMORY : 0;
 		gm_options |= (options.fix ? GITMOD_OPTION_FIX : 0);

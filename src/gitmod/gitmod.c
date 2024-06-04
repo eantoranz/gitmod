@@ -166,10 +166,9 @@ gitmod_info * gitmod_start(const char * repo_path, const char * treeish, int opt
 		free(info);
 		return NULL;
 	}
+	printf("gitmod is ready using git repo in %s\n", repo_path);
 #ifdef GITMOD_DEBUG
 	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
-#else
-	printf("Gitmod repo is ready\n");
 #endif
 	
 	info->root_tree = root_tree;
