@@ -45,5 +45,5 @@ docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
 	-e VERSION=$VERSION \
 	-e COMMITTISH=$COMMITTISH \
 	-e REQUIREMENTS_FILE=scripts/deb/requirements.txt \
-	--name gitmod-packager-$DISTRO-$DOCKER_TAG \
+	--name gitmod-debpackager-$DISTRO-$DOCKER_TAG \
 	$DISTRO:$DOCKER_TAG scripts/deb/packager.sh
