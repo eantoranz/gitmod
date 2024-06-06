@@ -6,9 +6,6 @@
 set -ex
 
 # Script that will take care of doing the build process
-apt-get update
-cat "$REQUIREMENTS_FILE" | xargs apt-get install -q -y build-essential git
-
 make clean
 make -j $( nproc )
-make test
+make -j $( nproc ) test
