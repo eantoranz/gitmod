@@ -9,14 +9,14 @@
 # the project in /mnt/work
 #
 # Parameters
-# - distro (ubuntu, debian)
-# - docker tag (stable, testing, buster, 22.04, etc)
+# - distro (fedora, centos, etc)
+# - docker tag (41, 7, 8, etc)
 # - git committish that will be used to build
 
 if [ $# -lt 3 ]; then
 	echo Not enough parameters. Need to provide:
-	echo - distro "(ubuntu, debian)"
-	echo - distro docker tag "(stable, testing, buster, 22.04, etc)"
+	echo - distro "(fedora, centos, etc)"
+	echo - distro docker tag "(41, 7, 8, etc, etc)"
 	echo - git committish that will be used for building/packaging
 	exit 1
 fi
@@ -44,6 +44,6 @@ docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
 	-e DOCKER_TAG=$DOCKER_TAG \
 	-e VERSION=$VERSION \
 	-e COMMITTISH=$COMMITTISH \
-	-e REQUIREMENTS_FILE=scripts/deb/requirements.txt \
-	--name gitmod-debpackager-$DISTRO-$DOCKER_TAG \
-	$DISTRO:$DOCKER_TAG scripts/deb/packager.sh
+	-e REQUIREMENTS_FILE=scripts/rpm/requirements.txt \
+	--name gitmod-rpmpackager-$DISTRO-$DOCKER_TAG \
+	$DISTRO:$DOCKER_TAG scripts/rpm/packager.sh

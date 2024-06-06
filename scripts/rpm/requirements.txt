@@ -1,0 +1,4 @@
+fuse3-devel
+libgit2-devel
+glib2-devel
+CUnit-devel

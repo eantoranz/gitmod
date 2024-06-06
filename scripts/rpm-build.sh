@@ -10,13 +10,13 @@
 # the project in /mnt/work
 #
 # Parameters
-# - distro (debian, ubuntu)
-# - ubuntu/debian tag to use for building (stable, testing, 22.04, 20.04, etc)
+# - distro (centos, fedorea)
+# - distro docker tag to use for building (9.0, 8.0, etc)
 
 if [ $# -lt 2 ]; then
 	echo Not enough parameters. Need to provide:
-	echo - distro "(debian/ubuntu)"
-	echo - distro docker tag "(stable, testing, buster, 22.04, 20.04, etc)"
+	echo - distro "(centos, fedora)"
+	echo - distro docker tag "(9.0, 8.0, etc)"
 	exit 1
 fi
 
@@ -28,7 +28,7 @@ echo Building for $DISTRO $DOCKER_TAG
 docker pull $DISTRO:$DEBIAN_TAG
 
 docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
-	-e REQUIREMENTS_FILE=scripts/deb/requirements.txt \
+	-e REQUIREMENTS_FILE=scripts/rpm/requirements.txt \
 	-e DOCKER_TAG=$DOCKER_TAG \
-	--name gitmod-debbuilder-$DISTRO-$DOCKER_TAG \
-	$DISTRO:$DOCKER_TAG scripts/deb/builder.sh
+	--name gitmod-rpmbuilder-$DISTRO-$DOCKER_TAG \
+	$DISTRO:$DOCKER_TAG scripts/rpm/builder.sh
