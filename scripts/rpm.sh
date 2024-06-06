@@ -9,8 +9,8 @@
 #
 # Parameters
 # - action (build, package, cli)
-# - distro (ubuntu, debian)
-# - docker tag (stable, testing, buster, 22.04, etc)
+# - distro (fedora, centos, etc)
+# - docker tag (7, 8, 41, etc)
 # - git committish that will be used to build (needed only when calling build)
 
 set -e
@@ -18,8 +18,8 @@ set -e
 if [ $# -lt 3 ]; then
 	echo Not enough parameters. Need to provide:
 	echo - action "(build, package, cli)"
-	echo - distro "(ubuntu, debian)"
-	echo - distro docker tag "(stable, testing, buster, 22.04, etc)"
+	echo - distro "(fedora, centos, etc)"
+	echo - distro docker tag "(41, 7, 8, etc, etc)"
 	echo - if the action is \"package\", the committish to package.
 	exit 1
 fi
@@ -59,12 +59,12 @@ package)
 esac
 
 
-DOCKER_IMAGE="gitmod-debbuilder-$DISTRO-$DOCKER_TAG"
+DOCKER_IMAGE="gitmod-rpmbuilder-$DISTRO-$DOCKER_TAG"
 
 images=$( docker image list -q "$DOCKER_IMAGE" | wc -l )
 if [ $images -eq 0 ]; then
 	echo Image $DOCKER_IMAGE does not exist. Need to create it
-	./scripts/docker/create-deb-image.sh $DISTRO $DOCKER_TAG scripts/deb/requirements.txt
+	./scripts/docker/create-rpm-image.sh $DISTRO $DOCKER_TAG scripts/rpm/requirements.txt
 fi
 
 docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
@@ -72,5 +72,5 @@ docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
 	-e DOCKER_TAG=$DOCKER_TAG \
 	-e VERSION=$VERSION \
 	-e COMMITTISH=$COMMITTISH \
-	--name gitmod-deb$ACTOR-$DISTRO-$DOCKER_TAG \
-	$DOCKER_IMAGE scripts/deb/$ACTION.sh
+	--name gitmod-rpm$ACTOR-$DISTRO-$DOCKER_TAG \
+	$DOCKER_IMAGE scripts/rpm/$ACTION.sh

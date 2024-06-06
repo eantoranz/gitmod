@@ -5,10 +5,6 @@
 
 set -ex
 
-# Script that will take care building/creating the package
-yum install -y findutils rpmdevtools
-cat "$REQUIREMENTS_FILE" | xargs yum install -y make git gcc
-
 rpmdev-setuptree
 
 # let's create the package every single time so we make sure we are _not_ working on a preexisting (and potentially busted!!!) file
