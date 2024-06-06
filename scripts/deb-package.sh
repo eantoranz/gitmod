@@ -36,14 +36,18 @@ echo distro docker tag: $DOCKER_TAG
 echo git committish: $COMMITTISH
 echo gitmod version: $VERSION
 
-echo Pulling $DISTRO:$DOCKER_TAG docker image
-docker pull $DISTRO:$DOCKER_TAG
+DOCKER_IMAGE="gitmod-debbuilder-$DISTRO-$DOCKER_TAG"
+
+images=$( docker image list -q "$DOCKER_IMAGE" | wc -l )
+if [ $images -eq 0 ]; then
+	echo Image $DOCKER_IMAGE does not exist. Need to create it
+	./scripts/docker/create-deb-image.sh $DISTRO $DOCKER_TAG scripts/deb/requirements.txt
+fi
 
 docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
 	-e DISTRO=$DISTRO \
 	-e DOCKER_TAG=$DOCKER_TAG \
 	-e VERSION=$VERSION \
 	-e COMMITTISH=$COMMITTISH \
-	-e REQUIREMENTS_FILE=scripts/deb/requirements.txt \
 	--name gitmod-debpackager-$DISTRO-$DOCKER_TAG \
-	$DISTRO:$DOCKER_TAG scripts/deb/packager.sh
+	$DOCKER_IMAGE scripts/deb/packager.sh

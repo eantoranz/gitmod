@@ -6,9 +6,6 @@
 set -ex
 
 # Script that will take care building/creating the package
-apt-get update
-cat "$REQUIREMENTS_FILE" | xargs apt-get install -q -y build-essential devscripts debhelper git
-
 mkdir /root/DEBBUILD
 
 # let's create the package every single time so we make sure we are _not_ working on a preexisting (and potentially busted!!!) file

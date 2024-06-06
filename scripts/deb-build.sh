@@ -13,6 +13,8 @@
 # - distro (debian, ubuntu)
 # - ubuntu/debian tag to use for building (stable, testing, 22.04, 20.04, etc)
 
+set -e
+
 if [ $# -lt 2 ]; then
 	echo Not enough parameters. Need to provide:
 	echo - distro "(debian/ubuntu)"
@@ -23,12 +25,17 @@ fi
 export DISTRO=$1
 export DOCKER_TAG=$2
 
-echo Building for $DISTRO $DOCKER_TAG
+DOCKER_IMAGE="gitmod-debbuilder-$DISTRO-$DOCKER_TAG"
 
-docker pull $DISTRO:$DEBIAN_TAG
+images=$( docker image list -q "$DOCKER_IMAGE" | wc -l )
+if [ $images -eq 0 ]; then
+	echo Image $DOCKER_IMAGE does not exist. Need to create it
+	./scripts/docker/create-deb-image.sh $DISTRO $DOCKER_TAG scripts/deb/requirements.txt
+fi
+
+echo Building gitmod for $DISTRO $DOCKER_TAG
 
 docker run --rm -ti -v "$PWD:/mnt/work" -w /mnt/work \
-	-e REQUIREMENTS_FILE=scripts/deb/requirements.txt \
 	-e DOCKER_TAG=$DOCKER_TAG \
 	--name gitmod-debbuilder-$DISTRO-$DOCKER_TAG \
-	$DISTRO:$DOCKER_TAG scripts/deb/builder.sh
+	$DOCKER_IMAGE scripts/deb/builder.sh
