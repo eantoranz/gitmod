@@ -45,7 +45,7 @@ p|pack|package)
 		echo You also need to specify which committish to package
 		exit 1
 	fi
-	export COMMITTISH=$4
+	export COMMITTISH=$( git rev-parse --short $4 )
 	export VERSION=$( git show $COMMITTISH:.gitmod_VERSION.txt 2> /dev/null | sed 's/.dirty//' )
 	if [ "$VERSION" == "" ]; then
 		echo Version file "(.gitmod_VERSION.txt)" does not exit in $COMMITTISH or it is empty. 1>&2
