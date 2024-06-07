@@ -69,7 +69,7 @@ echo Package distro version suffix: $DISTRO_PACKAGE_VERSION_SUFFIX
 
 sed -i "s/gitmod (\(.*\)) \(.*\)/gitmod (\1+$DISTRO_PACKAGE_VERSION_SUFFIX) \2/" debian/changelog
 
-debuild -us -uc
+DEB_BUILD_OPTIONS=noddebs debuild -us -uc
 
 # making sure that the package can be installed
 apt install -y ../*.deb || ( echo gitmod test package installation failed; exit 1 )
