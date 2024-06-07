@@ -10,7 +10,6 @@ rpmdev-setuptree
 # let's create the package every single time so we make sure we are _not_ working on a preexisting (and potentially busted!!!) file
 git config --global --add safe.directory /mnt/work # so that git can work without complaining
 git archive --format=tar.gz --prefix=gitmod-"$VERSION"/ -o gitmod-$VERSION.tar.gz $COMMITTISH
-# tar zxvf gitmod-$VERSION.tar.gz -C ~/rpmbuild/SOURCES  --strip-components=1
 cp gitmod-$VERSION.tar.gz ~/rpmbuild/SOURCES/gitmod
 
 cp packages/rpm/gitmod.spec ~/rpmbuild/SPECS
@@ -24,6 +23,10 @@ if [ ! -d /mnt/work/$TARGET_DIR ]; then
 fi
 
 ARCH=$( uname -m )
+
+# making sure that the package can be installed
+yum install -y /root/rpmbuild/RPMS/$ARCH/*.rpm || ( echo Failed installation test; exit 1 )
+echo Package can be installed without issues
 
 cp -v /root/rpmbuild/RPMS/$ARCH/*.rpm /mnt/work/$TARGET_DIR
 

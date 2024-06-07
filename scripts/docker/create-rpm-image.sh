@@ -22,7 +22,6 @@ REQUIREMENTS_FILE=$3
 
 echo Building gitmod rpm builder image for $DISTRO:$DOCKER_TAG
 
-echo Dockerfile:
 (
 	echo from $DISTRO:$DOCKER_TAG
 	echo run yum install -y findutils rpmdevtools make git gcc vim

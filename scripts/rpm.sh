@@ -17,7 +17,7 @@ set -e
 
 if [ $# -lt 3 ]; then
 	echo Not enough parameters. Need to provide:
-	echo - action "(build, package, cli)"
+	echo - action "(build (b), package (p/pack), cli (c)"
 	echo - distro "(fedora, centos, etc)"
 	echo - distro docker tag "(41, 7, 8, etc, etc)"
 	echo - if the action is \"package\", the committish to package.
@@ -32,13 +32,15 @@ echo action: $ACTION
 echo distro: $DISTRO
 echo distro docker tag: $DOCKER_TAG
 case $ACTION in
-build)
+b|build)
 	ACTOR=builder
+	ACTION=build
 	;;
-cli)
+c|cli)
 	ACTOR=cli
+	ACTION=build
 	;;
-package)
+p|pack|package)
 	if [ $# -lt 4 ]; then
 		echo You also need to specify which committish to package
 		exit 1
@@ -52,6 +54,7 @@ package)
 	echo git committish: $COMMITTISH
 	echo git version: $VERSION
 	ACTOR=packager
+	ACTION=package
 	;;
 *)
 	echo Unknown action $ACTION. Possible actions: build, package, cli.
