@@ -22,7 +22,6 @@ REQUIREMENTS_FILE=$3
 
 echo Building gitmod deb builder image for $DISTRO:$DOCKER_TAG
 
-echo Dockerfile:
 (
 	echo from $DISTRO:$DOCKER_TAG
 	echo run apt-get update
