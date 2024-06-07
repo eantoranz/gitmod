@@ -72,7 +72,7 @@ sed -i "s/gitmod (\(.*\)) \(.*\)/gitmod (\1+$DISTRO_PACKAGE_VERSION_SUFFIX) \2/"
 debuild -us -uc
 
 # making sure that the package can be installed
-apt install -y ../*.deb || ( echo Failed installation test; exit 1 )
+apt install -y ../*.deb || ( echo gitmod test package installation failed; exit 1 )
 echo Package can be installed without issues
 
 cp -v ../*.deb "$WORK_DIR"/$TARGET_DIR
