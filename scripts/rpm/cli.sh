@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2024 Edmundo Carmona
+# Released under the terms of GPLv2
+
 set -ex
 
 # Script that will set us in a "usable" environment
