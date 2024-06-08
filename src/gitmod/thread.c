@@ -10,21 +10,21 @@
 #include "gitmod/thread.h"
 #include "gitmod/types.h"
 
-static void * thread_task(void * params)
+static void *thread_task(void *params)
 {
-	gitmod_thread * thread = params;
+	gitmod_thread *thread = params;
 	while (thread->run_thread) {
 		thread->task(thread);
-		usleep(thread->delay * 1000); // sleep for a millisecond (or 10) and loop over so that it doesn't _hang_ (like when closing the application)
+		usleep(thread->delay * 1000);	// sleep for a millisecond (or 10) and loop over so that it doesn't _hang_ (like when closing the application)
 	}
 	return NULL;
 }
 
-gitmod_thread * gitmod_thread_create(gitmod_info * info, void (*task)(gitmod_thread *), int delay)
+gitmod_thread *gitmod_thread_create(gitmod_info *info, void (*task)(gitmod_thread *), int delay)
 {
-	if (!info)
+	if(!info)
 		return NULL;
-	gitmod_thread * thread = calloc(1, sizeof(gitmod_thread));
+	gitmod_thread *thread = calloc(1, sizeof(gitmod_thread));
 	if (thread) {
 		thread->delay = delay;
 		thread->task = task;
@@ -40,12 +40,12 @@ gitmod_thread * gitmod_thread_create(gitmod_info * info, void (*task)(gitmod_thr
 	return thread;
 }
 
-void gitmod_thread_set_delay(gitmod_thread * thread, int delay)
+void gitmod_thread_set_delay(gitmod_thread *thread, int delay)
 {
 	thread->delay = delay;
 }
 
-void gitmod_thread_release(gitmod_thread ** thread)
+void gitmod_thread_release(gitmod_thread **thread)
 {
 	if (*thread) {
 		(*thread)->run_thread = 0;

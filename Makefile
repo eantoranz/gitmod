@@ -31,7 +31,7 @@ lock.o: src/gitmod/lock.c src/include/gitmod/lock.h
 gitmod.o: src/gitmod/gitmod.c src/include/gitmod.h lock.o root_tree.o thread.o object.o cache.o
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
-gitmod: src/main.c gitmod.o
+gitmod: src/gitmod/main.c gitmod.o
 	$(CC) $< src/gitmod/*.o -o bin/$@ $(CFLAGS)
 
 unit_tests: src/tests/unit_tests/main.c src/tests/unit_tests/suites.h src/tests/unit_tests/suite*.c gitmod.o
@@ -43,3 +43,7 @@ install:
 
 clean:
 	rm -f bin/unit_tests bin/gitmod src/gitmod/*.o
+
+format:
+	indent -l120 -linux src/gitmod/*.c src/include/*.h src/include/gitmod/*.h src/tests/unit_tests/*.c src/tests/unit_tests/*.h
+	find ./ -name '*~' -delete

@@ -8,7 +8,7 @@
 
 #include "gitmod/types.h"
 
-gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_notify, GDestroyNotify value_destroy_notify);
+gitmod_cache *gitmod_cache_create(GDestroyNotify key_destroy_notify, GDestroyNotify value_destroy_notify);
 
 /**
  * Try to find the object for this id.
@@ -18,18 +18,18 @@ gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_notify, GDestroyNo
  * 
  * Will return NULL if there is an error
  */
-gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id);
+gitmod_cache_item *gitmod_cache_get(gitmod_cache * cache, const char *id);
 
 int gitmod_cache_size(gitmod_cache * cache);
 
 void gitmod_cache_set_fixed(gitmod_cache * cache, int fixed);
 
-const void * gitmod_cache_item_get(gitmod_cache_item * item);
+const void *gitmod_cache_item_get(gitmod_cache_item * item);
 
 /**
  * The object used here _won't_ be duplicate. The caller is in charge of deleting it (TODO: ....after it has been removed from the cache, which is not supported at the time)
  */
-void gitmod_cache_item_set(gitmod_cache_item * item, const void * content);
+void gitmod_cache_item_set(gitmod_cache_item * item, const void *content);
 
 void gitmod_cache_dispose(gitmod_cache ** cache);
 

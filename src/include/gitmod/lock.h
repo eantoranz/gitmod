@@ -8,7 +8,7 @@
 
 #include "types.h"
 
-gitmod_locker * gitmod_locker_create();
+gitmod_locker *gitmod_locker_create();
 
 void gitmod_lock(gitmod_locker * locker);
 
