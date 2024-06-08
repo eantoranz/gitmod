@@ -172,7 +172,7 @@ gitmod_info * gitmod_start(const char * repo_path, const char * treeish, int opt
 #endif
 	
 	info->root_tree = root_tree;
-	if (options && GITMOD_OPTION_FIX) {
+	if (!(options & GITMOD_OPTION_FIX)) {
 		info->lock = gitmod_locker_create();
 		if (!info->lock) {
 			fprintf(stderr, "Could not create lock for root tree (ran out of memory?)\n");
