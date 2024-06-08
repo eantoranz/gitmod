@@ -1,7 +1,6 @@
 .*
 *.swp
-/gitmod
-test
+bin/
 *.o
 *.tar.gz
 *.deb

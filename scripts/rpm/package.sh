@@ -19,18 +19,29 @@ fi
 
 # let's create the package every single time so we make sure we are _not_ working on a preexisting (and potentially busted!!!) file
 git config --global --add safe.directory "$WORK_DIR" # so that git can work without complaining
-git archive --format=tar.gz --prefix=gitmod-"$VERSION"/ -o $TARGET_DIR/gitmod-$VERSION.tar.gz $COMMITTISH -- Makefile src readme\*
+git archive --format=tar.gz --prefix=gitmod-"$VERSION"/ -o $TARGET_DIR/gitmod-$VERSION.tar.gz $COMMITTISH -- bin Makefile readme\* src
 cp $TARGET_DIR/gitmod-$VERSION.tar.gz ~/rpmbuild/SOURCES/gitmod
 
 cp packages/rpm/gitmod.spec ~/rpmbuild/SPECS
 
-rpmbuild --define "debug_package %{nil}" -ba packages/rpm/gitmod.spec
+while true; do
+  PACKAGE_ERROR=0
+  rpmbuild --define "debug_package %{nil}" -ba packages/rpm/gitmod.spec || PACKAGE_ERROR=1
+  if [ $PACKAGE_ERROR -eq 0 ]; then
+    break
+  fi
+  echo Something failed creating deb package
+  echo You can try any adjustemnt necessary to try to get the package to build successfully.
+  echo If you run \"exit 0\", a new attempt to build the package will be carried out.
+  echo If you run \"exit 1\", no more attempts will be tried and packaging process will be halted.
+  /bin/bash || ( echo Halting packaging process; exit 1 )
+done
 
 ARCH=$( uname -m )
 
 # making sure that the package can be installed
-yum install -y /root/rpmbuild/RPMS/$ARCH/*.rpm || ( echo gitmod test package installation failed; exit 1 )
-echo Package can be installed without issues
+yum install -y /root/rpmbuild/RPMS/$ARCH/*.rpm && gitmod --help > /dev/null || ( echo gitmod rpm package installation test failed; exit 1 )
+echo Package can be installed without issues, binary is present in \$PATH
 
 cp -v /root/rpmbuild/RPMS/$ARCH/*.rpm "$WORK_DIR"/$TARGET_DIR
 

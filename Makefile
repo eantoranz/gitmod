@@ -32,14 +32,14 @@ gitmod.o: src/gitmod/gitmod.c src/include/gitmod.h lock.o root_tree.o thread.o o
 	$(CC) -c -o src/gitmod/$@ $< $(CFLAGS)
 
 gitmod: src/main.c gitmod.o
-	$(CC) $< src/gitmod/*.o -o $@ $(CFLAGS)
+	$(CC) $< src/gitmod/*.o -o bin/$@ $(CFLAGS)
 
-test: src/tests/test.c src/tests/suites.h src/tests/suite*.c gitmod.o
-	$(CC) $< src/tests/suite*.c src/gitmod/*.o -o $@ $(CFLAGSTEST)
+unit_tests: src/tests/unit_tests/main.c src/tests/unit_tests/suites.h src/tests/unit_tests/suite*.c gitmod.o
+	$(CC) $< src/tests/unit_tests/suite*.c src/gitmod/*.o -o bin/$@ $(CFLAGSTEST)
 
 install:
 	mkdir -p $(DESTDIR)$(prefix)/bin
-	install gitmod $(DESTDIR)$(prefix)/bin
+	install bin/gitmod $(DESTDIR)$(prefix)/bin
 
 clean:
-	rm -f test gitmod src/gitmod/*.o
+	rm -f bin/unit_tests bin/gitmod src/gitmod/*.o
