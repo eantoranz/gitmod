@@ -7,5 +7,4 @@ set -e
 
 # Script that will take care of doing the build process
 make clean
-make -j $( nproc )
-make -j $( nproc ) unit_tests
+make -j $( nproc ) all

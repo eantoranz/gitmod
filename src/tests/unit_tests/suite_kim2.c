@@ -11,6 +11,7 @@
 #include "gitmod.h"
 
 static gitmod_info *gm_info;
+static char *REPO_PATH = "tests/test_repo";
 
 static int suitekim2_init()
 {
@@ -28,11 +29,11 @@ static int suitekim2_shutdown()
 
 static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "81c15dc513f285e727e6e498d24474a885b7dc01");	// tree from v0.7
+		ret = git_revparse_single(&treeish, gm_info->repo, "65517b96a487fbf59775aaefae3f8faff634ae79");	// tree from intermediate
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -40,11 +41,11 @@ static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 			int root_tree_deleted = 0;
 			if (root_tree) {
 				CU_ASSERT(root_tree->usage_counter == 0);
-				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "cowsay.txt");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
 				gitmod_object *object2 =
-				    gitmod_root_tree_get_object(gm_info, root_tree, "/src/gitmod.c");
+				    gitmod_root_tree_get_object(gm_info, root_tree, "/some-dir/sample-file.txt");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
 				// we mark it to be disposed
@@ -72,11 +73,11 @@ static void suitekim2_testPullTwoDifferentObjectsMarkForDeletionDisposeOfThem()
 
 static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "81c15dc513f285e727e6e498d24474a885b7dc01");	// tree from v0.7
+		ret = git_revparse_single(&treeish, gm_info->repo, "65517b96a487fbf59775aaefae3f8faff634ae79");	// tree from intermediate
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -84,10 +85,10 @@ static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 			int root_tree_deleted = 0;
 			if (root_tree) {
 				CU_ASSERT(root_tree->usage_counter == 0);
-				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/cowsay.txt");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
-				gitmod_object *object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/cowsay.txt");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(root_tree->usage_counter = 2);
 				// we mark it to be disposed
@@ -115,11 +116,11 @@ static void suitekim2_testPullTwiceSameObjectMarkForDeletionDisposeOfThem()
 
 static void suitekim2_treeMovesNoObjectInUse()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		ret = git_revparse_single(&treeish, gm_info->repo, "intermediate^{tree}");
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -127,8 +128,8 @@ static void suitekim2_treeMovesNoObjectInUse()
 			if (root_tree) {
 				CU_ASSERT(root_tree->usage_counter == 0);
 				gm_info->root_tree = root_tree;
-				// will askto change the tree for a new one
-				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				// will ask to change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "test-main^{tree}");
 				CU_ASSERT(!ret);
 				if (!ret) {
 					gitmod_root_tree *root_tree2 =
@@ -151,11 +152,11 @@ static void suitekim2_treeMovesNoObjectInUse()
 
 static void suitekim2_treeMoves1ObjectInUse()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		ret = git_revparse_single(&treeish, gm_info->repo, "intermediate^{tree}");
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -165,11 +166,11 @@ static void suitekim2_treeMoves1ObjectInUse()
 				gm_info->root_tree = root_tree;
 
 				// pull an object from tree
-				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "cowsay.txt");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(root_tree->usage_counter == 1);
-				// will askto change the tree for a new one
-				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				// will ask to change the tree for a new one
+				ret = git_revparse_single(&treeish, gm_info->repo, "test-main^{tree}");
 				CU_ASSERT(!ret);
 				if (!ret) {
 					gitmod_root_tree *root_tree2 =
@@ -195,11 +196,11 @@ static void suitekim2_treeMoves1ObjectInUse()
 
 static void suitekim2_treeMoves1ObjectInUseTwice()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		ret = git_revparse_single(&treeish, gm_info->repo, "intermediate^{tree}");
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -209,17 +210,17 @@ static void suitekim2_treeMoves1ObjectInUseTwice()
 				gm_info->root_tree = root_tree;
 
 				// pull an object from tree
-				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/cowsay.txt");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(object->root_tree == root_tree);
 				CU_ASSERT(root_tree->usage_counter == 1);
-				gitmod_object *object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/cowsay.txt");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(object2->root_tree == root_tree);
 				CU_ASSERT(root_tree->usage_counter == 2);
 				CU_ASSERT(object == object2);
 				// will askto change the tree for a new one
-				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				ret = git_revparse_single(&treeish, gm_info->repo, "test-main^{tree}");
 				CU_ASSERT(!ret);
 				if (!ret) {
 					gitmod_root_tree *root_tree2 =
@@ -250,11 +251,11 @@ static void suitekim2_treeMoves1ObjectInUseTwice()
 
 static void suitekim2_treeMoves2ObjectsInUse()
 {
-	int ret = git_repository_open(&gm_info->repo, ".");
+	int ret = git_repository_open(&gm_info->repo, REPO_PATH);
 	CU_ASSERT(!ret);
 	if (!ret) {
 		git_object *treeish;
-		ret = git_revparse_single(&treeish, gm_info->repo, "v0.7^{tree}");
+		ret = git_revparse_single(&treeish, gm_info->repo, "intermediate^{tree}");
 		CU_ASSERT(!ret);
 		if (!ret) {
 			gitmod_root_tree *root_tree = gitmod_root_tree_create((git_tree *) treeish, 0, 1);
@@ -264,17 +265,18 @@ static void suitekim2_treeMoves2ObjectsInUse()
 				gm_info->root_tree = root_tree;
 
 				// pull an object from tree
-				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/Makefile");
+				gitmod_object *object = gitmod_root_tree_get_object(gm_info, root_tree, "/cowsay.txt");
 				CU_ASSERT(object != NULL);
 				CU_ASSERT(object->root_tree == root_tree);
 				CU_ASSERT(root_tree->usage_counter == 1);
-				gitmod_object *object2 = gitmod_root_tree_get_object(gm_info, root_tree, "/readme.txt");
+				gitmod_object *object2 =
+				    gitmod_root_tree_get_object(gm_info, root_tree, "/hello-world.sh");
 				CU_ASSERT(object2 != NULL);
 				CU_ASSERT(object2->root_tree == root_tree);
 				CU_ASSERT(root_tree->usage_counter == 2);
 				CU_ASSERT(object != object2);
 				// will askto change the tree for a new one
-				ret = git_revparse_single(&treeish, gm_info->repo, "v0.6^{tree}");
+				ret = git_revparse_single(&treeish, gm_info->repo, "test-main^{tree}");
 				CU_ASSERT(!ret);
 				if (!ret) {
 					gitmod_root_tree *root_tree2 =

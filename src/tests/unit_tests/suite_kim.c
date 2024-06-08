@@ -11,11 +11,12 @@
 #include "gitmod.h"
 
 static gitmod_info *gm_info;
+static char *REPO_PATH = "tests/test_repo";
 
 static int suitekim_init()
 {
 	gitmod_init();
-	gm_info = gitmod_start(".", "583510cd3ae56e", GITMOD_OPTION_KEEP_IN_MEMORY, 100);
+	gm_info = gitmod_start(REPO_PATH, "test-main", GITMOD_OPTION_KEEP_IN_MEMORY, 100);
 	return gm_info == NULL;
 }
 
@@ -29,10 +30,10 @@ static int suitekim_shutdown()
 static void suitekim_testRevisionInfo()
 {
 	fprintf(stderr, "Revision time: %ld\n", gm_info->root_tree->time);
-	CU_ASSERT(gm_info->root_tree->time == 1593046557);
+	CU_ASSERT(gm_info->root_tree->time == 2000000000);
 	CU_ASSERT(gm_info->treeish_type == GIT_OBJ_COMMIT);
 	CU_ASSERT(gm_info->root_tree->objects_cache != NULL);
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);	// all paths are set
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);	// all paths are set
 }
 
 static void suitekim_testGetRootTree()
@@ -59,39 +60,39 @@ static void suitekim_testGetRootTree()
 				enum gitmod_object_type expected_type;
 				switch (i) {
 				case 0:
-					name = ".gitignore";
+					name = "cowsay.txt";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 17;
+					expected_size = 184;
 					expected_mode = 0444;
 					break;
 				case 1:
-					name = "build.sh";
+					name = "hello-world.sh";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 274;
+					expected_size = 30;
 					expected_mode = 0555;
 					break;
 				case 2:
-					name = "gitfs.c";
+					name = "readme.txt";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 4672;
+					expected_size = 247;
 					expected_mode = 0444;
 					break;
 				case 3:
-					name = "include";
-					expected_items = 2;
-					expected_type = GITMOD_OBJECT_TREE;
-					expected_size = 2;
-					expected_mode = 0;
-					break;
-				case 4:
-					name = "tests";
+					name = "some-dir";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_TREE;
 					expected_size = 1;
 					expected_mode = 0;
+					break;
+				case 4:
+					name = "tux.txt";
+					expected_items = 1;
+					expected_type = GITMOD_OBJECT_BLOB;
+					expected_size = 166;
+					expected_mode = 0444;
 					break;
 				default:
 					name = "***unknown item.... need to add more values***";
@@ -122,58 +123,60 @@ static void suitekim_testGetRootTree()
 		gitmod_dispose_object(&root_tree);
 		CU_ASSERT(root_tree != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);
 }
 
 static void suitekim_testGetObjectByPathBlob()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "/tests/test.c");
+	gitmod_object *object = gitmod_get_object(gm_info, "/tux.txt");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
-		CU_ASSERT(size == 2078);
+		CU_ASSERT(size == 166);
 		const char *content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
-			char *dest = calloc(1, 10);
-			memcpy(dest, content, 9);
-			CU_ASSERT(strcmp(dest, "/*\n * Cop") == 0);
+			char *reference = " _____________\n< Linux rules >";
+			char *dest = calloc(1, strlen(reference) + 1);
+			memcpy(dest, content, strlen(reference));
+			CU_ASSERT(strcmp(dest, reference) == 0);
 		}
 		CU_ASSERT(gitmod_object_get_mode(object) == 0444);
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);
 }
 
 static void suitekim_testGetExecObjectByPathBlob()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "/build.sh");
+	gitmod_object *object = gitmod_get_object(gm_info, "/hello-world.sh");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
-		CU_ASSERT(size == 274);
+		CU_ASSERT(size == 30);
 		const char *content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
-			char *dest = calloc(1, 10);
-			memcpy(dest, content, 9);
-			CU_ASSERT(strcmp(dest, "#!/bin/ba") == 0);
+			char *reference = "#!/bin/ba";
+			char *dest = calloc(1, strlen(reference) + 1);
+			memcpy(dest, content, strlen(reference));
+			CU_ASSERT(strcmp(dest, reference) == 0);
 		}
 		CU_ASSERT(gitmod_object_get_mode(object) == 0555);
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);
 }
 
 static void suitekim_testGetObjectByPathTree()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "tests");
+	gitmod_object *object = gitmod_get_object(gm_info, "some-dir");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_TREE);
@@ -184,14 +187,14 @@ static void suitekim_testGetObjectByPathTree()
 		gitmod_dispose_object(&object);
 		CU_ASSERT(object != NULL);
 	}
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);
 }
 
 static void suitekim_testGetNonExistingObjectByPath()
 {
 	gitmod_object *object = gitmod_get_object(gm_info, "blahblah");
 	CU_ASSERT(object == NULL);
-	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 9);
+	CU_ASSERT(gitmod_cache_size(gm_info->root_tree->objects_cache) == 7);
 }
 
 CU_pSuite suitekim_setup()

@@ -1,6 +1,9 @@
+bin/
+tests/unit_tests
+tests/test_repo
+tests/mount-point
 .*
 *.swp
-bin/
 *.o
 *.tar.gz
 *.deb

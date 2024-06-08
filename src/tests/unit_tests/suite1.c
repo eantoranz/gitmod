@@ -11,11 +11,12 @@
 #include <CUnit/Basic.h>
 
 static gitmod_info *gm_info;
+static char *REPO_PATH = "tests/test_repo";
 
 static int suite1_init()
 {
 	gitmod_init();
-	gm_info = gitmod_start(".", "583510cd3ae56e", 0, 100);
+	gm_info = gitmod_start(REPO_PATH, "test-main", 0, 100);
 	return gm_info == NULL;
 }
 
@@ -28,7 +29,7 @@ static int suite1_shutdown()
 static void suite1_testRevisionInfo()
 {
 	fprintf(stderr, "Revision time: %ld\n", gm_info->root_tree->time);
-	CU_ASSERT(gm_info->root_tree->time == 1593046557);
+	CU_ASSERT(gm_info->root_tree->time == 2000000000);
 	CU_ASSERT(gm_info->treeish_type == GIT_OBJ_COMMIT);
 	CU_ASSERT(gm_info->root_tree->objects_cache == NULL);
 }
@@ -58,39 +59,39 @@ static void suite1_testGetRootTree()
 				enum gitmod_object_type expected_type;
 				switch (i) {
 				case 0:
-					name = ".gitignore";
+					name = "cowsay.txt";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 17;
+					expected_size = 184;
 					expected_mode = 0444;
 					break;
 				case 1:
-					name = "build.sh";
+					name = "hello-world.sh";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 274;
+					expected_size = 30;
 					expected_mode = 0555;
 					break;
 				case 2:
-					name = "gitfs.c";
+					name = "readme.txt";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_BLOB;
-					expected_size = 4672;
+					expected_size = 247;
 					expected_mode = 0444;
 					break;
 				case 3:
-					name = "include";
-					expected_items = 2;
-					expected_type = GITMOD_OBJECT_TREE;
-					expected_size = 2;
-					expected_mode = 0;
-					break;
-				case 4:
-					name = "tests";
+					name = "some-dir";
 					expected_items = 1;
 					expected_type = GITMOD_OBJECT_TREE;
 					expected_size = 1;
 					expected_mode = 0;
+					break;
+				case 4:
+					name = "tux.txt";
+					expected_items = 1;
+					expected_type = GITMOD_OBJECT_BLOB;
+					expected_size = 166;
+					expected_mode = 0444;
 					break;
 				default:
 					name = "***unknown item.... need to add more values***";
@@ -126,20 +127,20 @@ static void suite1_testGetRootTree()
 
 static void suite1_testGetObjectByPathBlob()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "/tests/test.c");
+	gitmod_object *object = gitmod_get_object(gm_info, "/cowsay.txt");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
-		CU_ASSERT(size == 2078);
+		CU_ASSERT(size == 184);
 		const char *content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
-			char *dest = calloc(1, 10);
-			strncpy(dest, content, 9);
-			CU_ASSERT(strcmp(dest, "/*\n * Cop") == 0);
+			char *dest = calloc(1, 27);
+			strncpy(dest, content, 26);
+			CU_ASSERT(strcmp(dest, " ___________\n< git rules >") == 0);
 		}
 		CU_ASSERT(gitmod_object_get_mode(object) == 0444);
 		gitmod_dispose_object(&object);
@@ -149,14 +150,14 @@ static void suite1_testGetObjectByPathBlob()
 
 static void suite1_testGetExecObjectByPathBlob()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "/build.sh");
+	gitmod_object *object = gitmod_get_object(gm_info, "/hello-world.sh");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gm_info->root_tree->usage_counter == 0);
 		CU_ASSERT(gitmod_object_get_type(object) == GITMOD_OBJECT_BLOB);
 		CU_ASSERT(gitmod_object_get_num_entries(object) == 1);
 		long size = gitmod_object_get_size(object);
-		CU_ASSERT(size == 274);
+		CU_ASSERT(size == 30);
 		const char *content = gitmod_object_get_content(object);
 		CU_ASSERT(content != NULL);
 		if (content) {
@@ -172,7 +173,7 @@ static void suite1_testGetExecObjectByPathBlob()
 
 static void suite1_testGetObjectByPathTree()
 {
-	gitmod_object *object = gitmod_get_object(gm_info, "tests");
+	gitmod_object *object = gitmod_get_object(gm_info, "some-dir");
 	CU_ASSERT(object != NULL);
 	if (object) {
 		CU_ASSERT(gm_info->root_tree->usage_counter == 0);

@@ -35,14 +35,16 @@ gitmod: src/gitmod/main.c gitmod.o
 	$(CC) $< src/gitmod/*.o -o bin/$@ $(CFLAGS)
 
 unit_tests: src/tests/unit_tests/main.c src/tests/unit_tests/suites.h src/tests/unit_tests/suite*.c gitmod.o
-	$(CC) $< src/tests/unit_tests/suite*.c src/gitmod/*.o -o bin/$@ $(CFLAGSTEST)
+	$(CC) $< src/tests/unit_tests/suite*.c src/gitmod/*.o -o tests/$@ $(CFLAGSTEST)
+
+all: gitmod unit_tests
 
 install:
 	mkdir -p $(DESTDIR)$(prefix)/bin
 	install bin/gitmod $(DESTDIR)$(prefix)/bin
 
 clean:
-	rm -f bin/unit_tests bin/gitmod src/gitmod/*.o
+	rm -f tests/unit_tests bin/gitmod src/gitmod/*.o
 
 format:
 	indent -l120 -linux src/gitmod/*.c src/include/*.h src/include/gitmod/*.h src/tests/unit_tests/*.c src/tests/unit_tests/*.h

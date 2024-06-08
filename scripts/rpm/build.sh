@@ -6,5 +6,4 @@
 set -e
 
 make clean
-make -j $( nproc )
-make -j $( nproc ) unit_tests
+make -j $( nproc ) all
