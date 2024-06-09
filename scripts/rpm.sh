@@ -38,7 +38,7 @@ b|build)
 	;;
 c|cli)
 	ACTOR=cli
-	ACTION=build
+	ACTION=cli
 	;;
 p|pack|package)
 	if [ $# -lt 4 ]; then

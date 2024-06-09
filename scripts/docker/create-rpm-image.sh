@@ -24,7 +24,7 @@ echo Building gitmod rpm builder image for $DISTRO:$DOCKER_TAG
 
 (
 	echo from $DISTRO:$DOCKER_TAG
-	echo run yum install -y findutils rpmdevtools make git gcc vim
+	echo run yum install -y findutils rpmdevtools make git gcc vim indent
 	if [ "$REQUIREMENTS_FILE" != "" ]; then
 		echo -n run yum install -y
 		cat "$REQUIREMENTS_FILE" | while read package; do

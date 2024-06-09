@@ -1,7 +1,9 @@
+bin/
+tests/unit_tests
+tests/test_repo
+tests/mount-point
 .*
 *.swp
-/gitmod
-test
 *.o
 *.tar.gz
 *.deb

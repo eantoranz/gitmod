@@ -3,29 +3,26 @@
  * Released under the terms of GPLv2
  */
 
-#include <stdio.h>
-#include <glib.h>
-#include "gitmod/cache.h"
-#include "gitmod/lock.h"
-#include "gitmod/object.h"
+#include <syslog.h>
+#include "gitmod.h"
 
-gitmod_cache * gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
+gitmod_cache *gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {
-	gitmod_locker * locker = NULL;
-	GHashTable * items = NULL;
-	gitmod_cache * cache = NULL;
+	gitmod_locker *locker = NULL;
+	GHashTable *items = NULL;
+	gitmod_cache *cache = NULL;
 	locker = gitmod_locker_create();
 	if (!locker) {
-		fprintf(stderr, "Could not set up locker for cache\n");
+		syslog(LOG_ERR, "Could not set up locker for cache");
 		goto end;
 	}
-	
+
 	items = g_hash_table_new_full(g_str_hash, g_str_equal, key_destroy_func, value_destroy_func);
 	if (!items) {
-		fprintf(stderr, "Could not setup hashtable for cache\n");
+		syslog(LOG_ERR, "Could not setup hashtable for cache");
 		goto end;
 	}
-end:
+ end:
 	if (locker && items) {
 		cache = calloc(1, sizeof(gitmod_cache));
 		if (cache) {
@@ -40,33 +37,32 @@ end:
 		if (items)
 			g_hash_table_destroy(items);
 	}
-	
+
 	return cache;
 }
 
-void gitmod_cache_set_fixed(gitmod_cache * cache, int fixed)
+void gitmod_cache_set_fixed(gitmod_cache *cache, int fixed)
 {
 	if (!cache)
 		return;
 	cache->fixed = fixed;
 }
 
-gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id)
+gitmod_cache_item *gitmod_cache_get(gitmod_cache *cache, const char *id)
 {
 	if (!cache)
 		return NULL;
-	gitmod_cache_item * item = g_hash_table_lookup(cache->items, id);
+	gitmod_cache_item *item = g_hash_table_lookup(cache->items, id);
 	if (item || cache->fixed)
 		return item;
 	gitmod_lock(cache->locker);
 	// now I am the only one looking into the hash table. Let's tru again
 	item = g_hash_table_lookup(cache->items, id);
 	if (item) {
-		 // another thread had set it up before us. Let's move on
+		// another thread had set it up before us. Let's move on
 		gitmod_unlock(cache->locker);
 		return item;
 	}
-	
 	// need to create a new instance of a container
 	item = calloc(1, sizeof(gitmod_cache_item));
 	if (item) {
@@ -75,8 +71,8 @@ gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id)
 			// can't work with container if it does not have a lock
 			free(item);
 		else {
-			gitmod_lock(item->locker); // so that no other thread can get its content
-			
+			gitmod_lock(item->locker);	// so that no other thread can get its content
+
 			// we associate the value in the hash table
 			g_hash_table_insert(cache->items, strdup(id), item);
 		}
@@ -85,14 +81,14 @@ gitmod_cache_item * gitmod_cache_get(gitmod_cache * cache, const char * id)
 	return item;
 }
 
-int gitmod_cache_size(gitmod_cache * cache)
+int gitmod_cache_size(gitmod_cache *cache)
 {
 	if (!cache)
 		return 0;
 	return g_hash_table_size(cache->items);
 }
 
-void gitmod_cache_item_set(gitmod_cache_item * item, const void * content)
+void gitmod_cache_item_set(gitmod_cache_item *item, const void *content)
 {
 	if (!item)
 		return;
@@ -103,19 +99,19 @@ void gitmod_cache_item_set(gitmod_cache_item * item, const void * content)
 	}
 }
 
-const void * gitmod_cache_item_get(gitmod_cache_item * item)
+const void *gitmod_cache_item_get(gitmod_cache_item *item)
 {
 	if (!item)
 		return NULL;
 	if (item->content)
 		return item->content;
-	gitmod_lock(item->locker); // need to lock it so that we wait until content hs been set
+	gitmod_lock(item->locker);	// need to lock it so that we wait until content hs been set
 	// now we are sure that content has been set
 	gitmod_unlock(item->locker);
 	return item->content;
 }
 
-void gitmod_cache_dispose(gitmod_cache ** cache)
+void gitmod_cache_dispose(gitmod_cache **cache)
 {
 	if (*cache) {
 		g_hash_table_destroy((*cache)->items);

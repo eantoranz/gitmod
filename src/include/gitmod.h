@@ -32,7 +32,7 @@ void gitmod_shutdown();
  * 
  * root_tree_delay: milliseconds to wait before checking that the treeish has moved. 0 means it's a tight loop
  */
-gitmod_info * gitmod_start(const char * repo_path, const char * treeish, int options, int root_tree_delay);
+gitmod_info *gitmod_start(const char *repo_path, const char *treeish, int options, int root_tree_delay);
 
 /**
  * stop tracking a repo/treeish
@@ -54,9 +54,9 @@ int gitmod_root_tree_changed(gitmod_info * info, gitmod_root_tree * new_tree);
 /**
  * Get the object associated with this path
  */
-gitmod_object * gitmod_get_object(gitmod_info * info, const char * path);
+gitmod_object *gitmod_get_object(gitmod_info * info, const char *path);
 
-gitmod_object * gitmod_get_tree_entry(gitmod_info * info, gitmod_object * tree, int index);
+gitmod_object *gitmod_get_tree_entry(gitmod_info * info, gitmod_object * tree, int index);
 
 /**
  * Will return if the tree associated to the object was deleted
@@ -75,11 +75,11 @@ int gitmod_get_num_entries(gitmod_object * object);
  */
 int gitmod_get_size(gitmod_object * object);
 
-char * gitmod_get_name(gitmod_object * object);
+char *gitmod_get_name(gitmod_object * object);
 
 /**
  * do not free the pointer
  */
-const char * gitmod_get_content(gitmod_object * object);
+const char *gitmod_get_content(gitmod_object * object);
 
 #endif
