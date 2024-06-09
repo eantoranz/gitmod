@@ -24,26 +24,27 @@ At the moment it does the very basics:
 ## How to compile
 Run:
 
-    make
+    make clean && make
 
-That will generate a binary called `gitmod`
+That will generate a binary called `gitmod` inside `bin` directory.
 
 ## Options:
 It supports the standard options provided by [FUSE](https://github.com/libfuse/libfuse).
 It also provides a few more options
 
 - **--treeish**: use to specify which treeish to track (branch/tag/revision). Default: **HEAD**
-- **--repo**: use to specify which repo to expose contents from. Default: **./**
+- **--repo**: use to specify which repo to expose contents from. There is no default. If a default
+is **not** provided, gitmod will not work.
 
 Check more options and details with
 
-    ./gitmod -h
+    ./bin/gitmod -h
 
 ## Examples
 
 *Mount* the contents of a web project from branch **main** of a repo in **/home/user/project** on **apache** (*standard debian layout*).
 
-    sudo ./gitmod --repo=/home/user/project --branch=main -o allow_other -o uid=$( id -u www-data ) /var/www/html
+    sudo ./bin/gitmod --repo=/home/user/project --treeish=main -o allow_other -o uid=$( id -u www-data ) /var/www/html
     
 ## Performance
 The **--kim** (keep in memory). This option will force **gitmod** to keep objects that are
@@ -60,8 +61,18 @@ This will make gitmod send information to stdout when running.
 ## building packages
 
 ### debian
-There is a script called `scripts/build-debian` which can be used to build debian packages. It will use [Docker](https://hub.docker.com/_/debian)
-to build the package. Call the script without parameters to see what parameters it expects when you call it.
+The following script can be called to generate a debian package:
+```
+./scripts/deb.sh package debian bookworm HEAD
+```
+
+### rpm
+The following script can be called to generate an RPM package:
+```
+./scripts/rpm.sh package fedora 41 HEAD
+```
+
+**NOTE**: It will be possible to package (other) specific versions of gitmod later.
 
 ## Copyright / Licensing
 Copyright 2020-2024 Edmundo Carmona Antoranz. Released under the terms of [GPLv2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
