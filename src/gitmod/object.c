@@ -3,11 +3,7 @@
  * Released under the terms of GPLv2
  */
 
-#include <stdio.h>
-#include <git2.h>
-#include <errno.h>
-#include <string.h>
-#include "gitmod/object.h"
+#include <syslog.h>
 #include "gitmod.h"
 
 enum gitmod_object_type gitmod_object_get_type(gitmod_object *object)
@@ -101,7 +97,7 @@ gitmod_object *gitmod_object_get_tree_entry(gitmod_info *info, gitmod_root_tree 
 		return NULL;
 	git_tree_entry *git_entry = (git_tree_entry *) git_tree_entry_byindex(tree->tree, index);	// no need to dispose of manually
 	if (!git_entry) {
-		fprintf(stderr, "No entry in tree for index %d\n", index);
+		syslog(LOG_ERR, "No entry in tree for index %d", index);
 		return NULL;
 	}
 	const char *item_name = git_tree_entry_name(git_entry);

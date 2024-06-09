@@ -6,13 +6,9 @@
 #define FUSE_USE_VERSION 35
 
 #include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <fuse.h>
+#include <stdio.h>
+#include <syslog.h>
 #include "gitmod.h"
 
 static struct options {
@@ -49,7 +45,7 @@ static void *gitmod_fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg
 {
 	(void)conn;
 	if (options.debug)
-		printf("Running gitmod_init(...)\n");
+		syslog(LOG_DEBUG, "Running gitmod_init(...)");
 	cfg->kernel_cache = options.fix;
 	gm_info->uid = cfg->set_uid;
 	gm_info->gid = cfg->set_gid;
@@ -62,11 +58,11 @@ static int gitmod_fs_getattr(const char *path, struct stat *stbuf, struct fuse_f
 	int res = 0;
 
 	if (options.debug)
-		printf("Running gitmod_getattr(\"%s\", ...)\n", path);
+		syslog(LOG_DEBUG, "Running gitmod_getattr(\"%s\", ...)", path);
 
 	gitmod_object *object = gitmod_get_object(gm_info, path);
 	if (!object) {
-		fprintf(stderr, "gitmod_getattr: Could not find an object for path %s\n", path);
+		syslog(LOG_ERR, "gitmod_getattr: Could not find an object for path %s", path);
 		return -ENOENT;
 	}
 
@@ -100,11 +96,11 @@ gitmod_fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	(void)flags;
 
 	if (options.debug)
-		printf("Running gitmod_readdir(\"%s\", ...)\n", path);
+		syslog(LOG_DEBUG, "Running gitmod_readdir(\"%s\", ...)", path);
 
 	gitmod_object *dir_node = gitmod_get_object(gm_info, path);
 	if (!dir_node || gitmod_object_get_type(dir_node) != GITMOD_OBJECT_TREE) {
-		fprintf(stderr, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)\n", path);
+		syslog(LOG_ERR, "gitmod_readdir: Could not find an object for path %s (or it's not a tree)", path);
 		if (dir_node)
 			gitmod_dispose_object(&dir_node);
 		return -ENOENT;
@@ -133,7 +129,7 @@ static int gitmod_fs_open(const char *path, struct fuse_file_info *fi)
 	int ret = 0;
 	gitmod_object *object = gitmod_get_object(gm_info, path);
 	if (!object || gitmod_object_get_type(object) != GITMOD_OBJECT_BLOB) {
-		fprintf(stderr, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)\n", path);
+		syslog(LOG_ERR, "gitmod_fs_open: Could not find an object for path %s (or it's not a blob)", path);
 		if (object)
 			gitmod_dispose_object(&object);
 		ret = -ENOENT;
@@ -170,7 +166,7 @@ static int gitmod_fs_release(const char *path, struct fuse_file_info *fi)
 static void gitmod_fs_destroy()
 {
 	if (options.debug)
-		printf("Running gitmod_destroy()\n");
+		syslog(LOG_DEBUG, "Running gitmod_destroy()");
 	gitmod_stop(&gm_info);
 	gitmod_shutdown();
 

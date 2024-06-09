@@ -3,14 +3,8 @@
  * Released under the terms of GPLv2
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include "gitmod/types.h"
-#include "gitmod/lock.h"
-#include "gitmod/object.h"
+#include <syslog.h>
 #include "gitmod.h"
-#include "gitmod/cache.h"
 
 static int gitmod_tree_walk(const char *root, const git_tree_entry *entry, void *payload)
 {
@@ -75,10 +69,10 @@ void gitmod_root_tree_dispose(gitmod_root_tree **root_tree)
 {
 	if (!(root_tree && *root_tree))
 		return;
-	printf("Disposing of root tree\n");
+	syslog(LOG_INFO, "Disposing of root tree");
 	if ((*root_tree)->objects_cache) {
 #ifdef GITMOD_DEBUG
-		printf("Disposing of root tree's object's cache\n");
+		syslog(LOG_DEBUG, "Disposing of root tree's object's cache");
 #endif
 		gitmod_cache_dispose(&(*root_tree)->objects_cache);
 	}
@@ -95,7 +89,7 @@ void gitmod_root_tree_increase_usage(gitmod_root_tree *root_tree)
 	gitmod_lock(root_tree->lock);
 	root_tree->usage_counter++;
 #ifdef GITMOD_DEBUG
-	printf("Increasing root tree usage, count is now %d\n", root_tree->usage_counter);
+	syslog(LOG_DEBUG, "Increasing root tree usage, count is now %d", root_tree->usage_counter);
 #endif
 	gitmod_unlock(root_tree->lock);
 }
@@ -108,7 +102,7 @@ void gitmod_root_tree_decrease_usage(gitmod_root_tree **root_tree)
 	gitmod_lock((*root_tree)->lock);
 	(*root_tree)->usage_counter--;
 #ifdef GITMOD_DEBUG
-	printf("Decreasing root tree usage, count is now %d\n", (*root_tree)->usage_counter);
+	syslog(LOG_DEBUG, "Decreasing root tree usage, count is now %d", (*root_tree)->usage_counter);
 #endif
 	delete_root_tree = (*root_tree)->marked_for_deletion && (*root_tree)->usage_counter <= 0;
 	gitmod_unlock((*root_tree)->lock);
@@ -158,7 +152,7 @@ gitmod_object *gitmod_root_tree_get_object(gitmod_info *info, gitmod_root_tree *
 		strcat(path, orig_path);
 	}
 #ifdef GITMOD_DEBUG
-	printf("Getting object for path %s\n", path);
+	syslog(LOG_DEBUG, "Getting object for path %s", path);
 #endif
 	// is the object in memory already?
 	gitmod_cache_item *cached_item = NULL;
@@ -184,7 +178,7 @@ gitmod_object *gitmod_root_tree_get_object(gitmod_info *info, gitmod_root_tree *
 		ret = git_tree_entry_bypath(&tree_entry, root_tree->tree, path + (path[0] == '/' ? 1 : 0));
 		if (ret) {
 #ifdef GITMOD_DEBUG
-			printf("Could not find the object for the path %s\n", path);
+			syslog(LOG_DEBUG, "Could not find the object for the path %s", path);
 #endif
 			tree_entry = NULL;
 			goto end;
@@ -217,7 +211,7 @@ int gitmod_root_tree_dispose_object(gitmod_object **object)
 		return 0;
 
 #ifdef GITMOD_DEBUG
-	printf("Disposing of object for path %s\n", (*object)->path);
+	syslog(LOG_DEBUG, "Disposing of object for path %s", (*object)->path);
 #endif
 	gitmod_root_tree *root_tree = (*object)->root_tree;
 	// if the object is not cached, we can dispose of it direcly

@@ -3,9 +3,7 @@
  * Released under the terms of GPLv3
  */
 
-#include <pthread.h>
-#include <stdlib.h>
-#include "gitmod/types.h"
+#include "gitmod.h"
 
 gitmod_locker *gitmod_locker_create()
 {

@@ -3,11 +3,8 @@
  * Released under the terms of GPLv2
  */
 
-#include <stdio.h>
-#include <glib.h>
-#include "gitmod/cache.h"
-#include "gitmod/lock.h"
-#include "gitmod/object.h"
+#include <syslog.h>
+#include "gitmod.h"
 
 gitmod_cache *gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {
@@ -16,13 +13,13 @@ gitmod_cache *gitmod_cache_create(GDestroyNotify key_destroy_func, GDestroyNotif
 	gitmod_cache *cache = NULL;
 	locker = gitmod_locker_create();
 	if (!locker) {
-		fprintf(stderr, "Could not set up locker for cache\n");
+		syslog(LOG_ERR, "Could not set up locker for cache");
 		goto end;
 	}
 
 	items = g_hash_table_new_full(g_str_hash, g_str_equal, key_destroy_func, value_destroy_func);
 	if (!items) {
-		fprintf(stderr, "Could not setup hashtable for cache\n");
+		syslog(LOG_ERR, "Could not setup hashtable for cache");
 		goto end;
 	}
  end:

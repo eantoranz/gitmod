@@ -3,17 +3,9 @@
  * Released under the terms of GPLv2
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <errno.h>
 #include <git2.h>
-#include <unistd.h>
-#include <time.h>
+#include <syslog.h>
 #include "gitmod.h"
-#include "gitmod/lock.h"
-#include "gitmod/root_tree.h"
-#include "gitmod/thread.h"
 
 static int gitmod_started = 0;
 
@@ -22,11 +14,11 @@ int gitmod_init()
 	if (gitmod_started)
 		return 0;
 #ifdef GITMOD_DEBUG
-	printf("gitmod init (debug compilation)\n");
+	syslog(LOG_DEBUG, "gitmod init (debug compilation)");
 #endif
 	git_libgit2_init();
 	gitmod_started = 1;
-	printf("gitmod init done\n");
+	syslog(LOG_INFO, "gitmod init done");
 
 	return 0;
 }
@@ -37,7 +29,7 @@ void gitmod_shutdown()
 		return;
 	// going out, for the time being
 	git_libgit2_shutdown();
-	printf("gitmod shutdown complete\n");
+	syslog(LOG_INFO, "gitmod shutdown complete");
 }
 
 static git_tree *gitmod_get_tree_from_tag(git_tag *tag, time_t *time)
@@ -45,7 +37,7 @@ static git_tree *gitmod_get_tree_from_tag(git_tag *tag, time_t *time)
 	git_object *target;
 	int ret = git_tag_target(&target, tag);
 	if (ret) {
-		fprintf(stderr, "There was an error trying to get target from signed tag\n");
+		syslog(LOG_ERR, "There was an error trying to get target from signed tag");
 		return NULL;
 	}
 	*time = git_commit_time((git_commit *) target);
@@ -53,7 +45,7 @@ static git_tree *gitmod_get_tree_from_tag(git_tag *tag, time_t *time)
 	ret = git_commit_tree(&tree, (git_commit *) target);
 	if (ret) {
 		tree = NULL;
-		fprintf(stderr, "There was an error getting tree from signed tag's target revision\n");
+		syslog(LOG_ERR, "There was an error getting tree from signed tag's target revision");
 	}
 	git_object_free(target);
 	return tree;
@@ -71,7 +63,7 @@ static git_tree *gitmod_get_root_tree(gitmod_info *info, time_t *revision_time)
 	git_tree *root_tree = NULL;
 	ret = git_revparse_single(&treeish, info->repo, info->treeish);
 	if (ret) {
-		fprintf(stderr, "There was error parsing the threeish %s\n", info->treeish);
+		syslog(LOG_ERR, "There was error parsing the threeish %s", info->treeish);
 		return NULL;
 	}
 
@@ -79,7 +71,7 @@ static git_tree *gitmod_get_root_tree(gitmod_info *info, time_t *revision_time)
 	git_otype tag_target_type;
 	switch (object_type) {
 	case GIT_OBJ_TREE:
-		fprintf(stderr, "Threeish is a tree object straight\n");
+		syslog(LOG_ERR, "Threeish is a tree object straight");
 		root_tree = (git_tree *) treeish;
 		*revision_time = time(NULL);
 		info->treeish_type = GIT_OBJ_TREE;
@@ -92,12 +84,12 @@ static git_tree *gitmod_get_root_tree(gitmod_info *info, time_t *revision_time)
 		// type of object that it points to has to be a commit
 		tag_target_type = git_tag_target_type((git_tag *) treeish);
 		if (tag_target_type != GIT_OBJ_COMMIT) {
-			fprintf(stderr, "Signed tag does not point to a revision\n");
+			syslog(LOG_ERR, "Signed tag does not point to a revision");
 			goto end;
 		}
 		break;
 	default:
-		fprintf(stderr, "Treeish provided does not refer to a revision\n");
+		syslog(LOG_ERR, "Treeish provided does not refer to a revision");
 		goto end;
 	}
 	info->treeish_type = object_type;
@@ -112,7 +104,7 @@ static git_tree *gitmod_get_root_tree(gitmod_info *info, time_t *revision_time)
 	default:
 		ret = git_commit_tree(&root_tree, (git_commit *) treeish);
 		if (ret) {
-			fprintf(stderr, "Could not find tree object for the revision\n");
+			syslog(LOG_ERR, "Could not find tree object for the revision");
 			goto end;
 		}
 		*revision_time = git_commit_time((git_commit *) treeish);
@@ -142,21 +134,20 @@ gitmod_info *gitmod_start(const char *repo_path, const char *treeish, int option
 	if (ret) {
 		// there was an error opening the repository
 #if LIBGIT2_VER_MAJOR == 0 && LIBGIT2_VER_MINOR < 28
-		fprintf(stderr, "There was an error opening the git repo at %s: %s\n", repo_path,
-			giterr_last()->message);
+		syslog(LOG_ERR, "There was an error opening the git repo at %s: %s", repo_path, giterr_last()->message);
 #else
-		fprintf(stderr, "There was an error opening the git repo at %s: %s\n", repo_path,
-			git_error_last()->message);
+		syslog(LOG_ERR, "There was an error opening the git repo at %s: %s", repo_path,
+		       git_error_last()->message);
 #endif
 		goto end;
 	}
 #ifdef GITMOD_DEBUG
-	printf("Successfully opened repo at %s\n", git_repository_commondir(info->repo));
+	syslog(LOG_INFO, "Successfully opened repo at %s", git_repository_commondir(info->repo));
 #endif
 	time_t revision_time;
 	git_tree *git_root_tree = gitmod_get_root_tree(info, &revision_time);
 	if (!git_root_tree) {
-		fprintf(stderr, "Could not open root tree for treeish\n");
+		syslog(LOG_ERR, "Could not open root tree for treeish");
 		free(info);
 		return NULL;
 	}
@@ -164,30 +155,30 @@ gitmod_info *gitmod_start(const char *repo_path, const char *treeish, int option
 	gitmod_root_tree *root_tree =
 	    gitmod_root_tree_create(git_root_tree, revision_time, options & GITMOD_OPTION_KEEP_IN_MEMORY);
 	if (!root_tree) {
-		fprintf(stderr, "Could not set up root tree instance\n");
+		syslog(LOG_ERR, "Could not set up root tree instance");
 		free(info);
 		return NULL;
 	}
-	printf("gitmod is ready using git repo in %s\n", repo_path);
+	syslog(LOG_INFO, "gitmod is ready using git repo in %s", repo_path);
 #ifdef GITMOD_DEBUG
-	printf("Using tree %s as the root of the mount point\n", git_oid_tostr_s(git_tree_id(root_tree->tree)));
+	syslog(LOG_DEBUG, "Using tree %s as the root of the mount point",
+	       git_oid_tostr_s(git_tree_id(root_tree->tree)));
 #endif
 
 	info->root_tree = root_tree;
 	if (!(options & GITMOD_OPTION_FIX)) {
 		info->lock = gitmod_locker_create();
 		if (!info->lock) {
-			fprintf(stderr, "Could not create lock for root tree (ran out of memory?)\n");
+			syslog(LOG_ERR, "Could not create lock for root tree (ran out of memory?)");
 			free(info);
 			return NULL;
 		}
 		info->root_tree_monitor = gitmod_thread_create(info, gitmod_root_tree_monitor_task, root_tree_delay);
 		if (!info->root_tree_monitor)
-			fprintf(stderr,
-				"Could not create root tree monitor. Will be fixed on the starting root tree\n");
+			syslog(LOG_ERR, "Could not create root tree monitor. Will be fixed on the starting root tree");
 	} else {
 #ifdef GITMOD_DEBUG
-		printf("Root tree will be fixed\n");
+		syslog(LOG_DEBUG, "Root tree will be fixed");
 #endif
 	}
  end:
@@ -232,7 +223,7 @@ void gitmod_stop(gitmod_info **info)
 
 int gitmod_root_tree_changed(gitmod_info *info, gitmod_root_tree *new_tree)
 {
-	printf("root tree changed\n");
+	syslog(LOG_INFO, "root tree changed");
 	gitmod_root_tree *old_tree = info->root_tree;
 	info->root_tree = new_tree;
 	gitmod_unlock(info->lock);

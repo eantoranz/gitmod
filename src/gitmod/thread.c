@@ -3,12 +3,9 @@
  * Released under the terms of GPLv2
  */
 
-#include <pthread.h>
+#include <syslog.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "gitmod/thread.h"
-#include "gitmod/types.h"
+#include "gitmod.h"
 
 static void *thread_task(void *params)
 {
@@ -22,7 +19,7 @@ static void *thread_task(void *params)
 
 gitmod_thread *gitmod_thread_create(gitmod_info *info, void (*task)(gitmod_thread *), int delay)
 {
-	if(!info)
+	if (!info)
 		return NULL;
 	gitmod_thread *thread = calloc(1, sizeof(gitmod_thread));
 	if (thread) {
@@ -32,7 +29,7 @@ gitmod_thread *gitmod_thread_create(gitmod_info *info, void (*task)(gitmod_threa
 		thread->payload = info;
 		int res = pthread_create(&thread->thread, NULL, thread_task, thread);
 		if (res) {
-			printf("Hubo un fallo en el pthread_create. Res: %d\n", res);
+			syslog(LOG_ERR, "There was a failure in pthread_create. Res: %d", res);
 			free(thread);
 			thread = NULL;
 		}
