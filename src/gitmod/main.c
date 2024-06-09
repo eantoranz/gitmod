@@ -9,6 +9,7 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <syslog.h>
+#include <unistd.h>
 #include "gitmod.h"
 
 static struct options {
@@ -204,7 +205,33 @@ static void show_help(const char *progname)
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+
+	int foreground = 0;
+
+	int fargc = argc;
+	char **fargv = calloc(argc + 1, sizeof(char *));
+
+	for (int i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-f"))
+			foreground = 1;
+		fargv[i] = argv[i];
+	}
+	if (!foreground) {
+		pid_t pid = fork();
+		if (pid < 0) {
+			fprintf(stderr,
+				"Failure to fork process, can't run into the background. Try running in foreground (using -f)\n");
+			return 1;
+		}
+		if (pid != 0) {
+			printf("Check syslog for output from background process\n");
+			return 0;
+		}
+		// child process.... this one is where we call fuse_main as it will continue running
+		fargc++;
+		fargv[argc] = "-f";	// force fuse to run in the foreground regardless
+	}
+	struct fuse_args args = FUSE_ARGS_INIT(fargc, fargv);
 
 	/* Set defaults -- we have to use strdup so that
 	   fuse_opt_parse can free the defaults if other
@@ -226,8 +253,11 @@ int main(int argc, char *argv[])
 		assert(fuse_opt_add_arg(&args, "--help") == 0);
 		args.argv[0][0] = '\0';
 	} else if (!options.repo_path) {
-		fprintf(stderr, "No repo path provided. Provide it with --repo=<repo-path>.\n");
-		return 1;
+		if (foreground)
+			fprintf(stderr, "No repo path provided. Provide it with --repo=<repo-path>.\n");
+		else
+			syslog(LOG_ERR, "No repo path provided. Provide it with --repo=<repo-path>.");
+		ret = 1;
 	} else {
 		gitmod_init();
 		int gm_options = options.keep_in_memory ? GITMOD_OPTION_KEEP_IN_MEMORY : 0;
@@ -235,14 +265,25 @@ int main(int argc, char *argv[])
 		gm_info = gitmod_start(options.repo_path, options.treeish, gm_options, options.root_tree_delay);
 
 		if (!gm_info) {
-			fprintf(stderr, "Could not setup gitmod\n");
+			if (foreground)
+				fprintf(stderr, "Could not setup gitmod\n");
+			else
+				syslog(LOG_ERR, "Could not setup gitmod.");
 			gitmod_shutdown();
 			ret = 1;
 		}
 	}
 
-	if (!ret)
+	if (!ret) {
+		if (foreground)
+			printf("Check for output in syslog\n");
+
 		fuse_main(args.argc, args.argv, &gitmod_oper, NULL);
+	}
+
+	if (!foreground) {
+		syslog(LOG_INFO, "Exiting.");
+	}
 
 	return ret;
 }
