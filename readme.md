@@ -56,9 +56,12 @@ You can run **make** like this to compile with debug output information
     DEBUG=1 make
 
 This will make gitmod send information to stdout when running.
-**Important**: might require running **gitmod** with FUSE option **-f** so that the process does not go into the background.
+**Important**: might require running **gitmod** with FUSE option **-f** so that the process does not go into the background. 
 
 ## building packages
+
+Building packages is done through [docker](https://hub.docker.com/) containers based on the distros (based on rpm or deb)
+that are _"tagged"_ locally for gitmod specifically.
 
 ### debian
 The following script can be called to generate a debian package:
