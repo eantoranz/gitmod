@@ -1,3 +1,12 @@
+gitmod (0.11-1) unstable; urgency=medium
+
+  * Released gitmod 0.11
+  - gitmod was not refreshing the mount point when the treeish moved when
+    going into background.
+  - Scripts to generate packages
+
+ -- Edmundo Carmona Antoranz <eantoranz@gmail.com>  Mon, 10 Jun 2024 17:59:03 +0200
+
 gitmod (0.10-1) unstable; urgency=medium
 
   * Initial release.

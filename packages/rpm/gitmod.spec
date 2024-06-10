@@ -1,5 +1,5 @@
 Name:           gitmod
-Version:        0.10
+Version:        0.11
 Release:        1%{?dist}
 Summary:        fuse-based linux kernel module to display a committish from a git repo on a mount point.
 
@@ -31,5 +31,9 @@ fuse-based linux kernel module to display a treeish from a git repo
 
 
 %changelog
+* Mon Jun 10 2024 Edmundo Carmona Antoranz
+- Released gitmod 0.11
+- gitmod was not refreshing the mount point when the treeish moved when going into background.
+- Scripts to generate packages
 * Wed Jun 05 2024 Edmundo Carmona Antoranz
 - Initial release using v0.10
