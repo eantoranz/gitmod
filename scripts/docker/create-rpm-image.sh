@@ -8,12 +8,12 @@
 set -e
 
 if [ $# -lt 2 ]; then
-	echo Did not provide enough parameters to create rpm builder image
-	echo Need to provide:
-	echo - Distro
-	echo - Distro Docker tag
-	echo - Optionally, a requirements file "(packages will be installed with apt-get)"
-	exit 1
+  echo Did not provide enough parameters to create rpm builder image
+  echo Need to provide:
+  echo - Distro
+  echo - Distro Docker tag
+  echo - Optionally, a requirements file "(packages will be installed with apt-get)"
+  exit 1
 fi
 
 DISTRO=$1
@@ -23,15 +23,24 @@ REQUIREMENTS_FILE=$3
 echo Building gitmod rpm builder image for $DISTRO:$DOCKER_TAG
 
 (
-	echo from $DISTRO:$DOCKER_TAG
-	echo run yum install -y findutils rpmdevtools make git gcc vim indent
-	if [ "$REQUIREMENTS_FILE" != "" ]; then
-		echo -n run yum install -y
-		cat "$REQUIREMENTS_FILE" | while read package; do
-			echo -n " $package"
-		done
-		echo
-	fi
+  echo from $DISTRO:$DOCKER_TAG
+  if [ $DISTRO == rockylinux -o $DISTRO == almalinux ]; then
+    echo run dnf -y install "'dnf-command(config-manager)'"
+    if [ $DOCKER_TAG == 9 ]; then
+      echo run dnf -y config-manager --set-enabled crb
+    elif [ $DOCKER_TAG == 8 ]; then
+      echo run dnf -y config-manager --set-enabled powertools
+    fi
+    echo run dnf -y install epel-release
+    fi
+    echo run yum install -y findutils rpmdevtools make git gcc vim indent
+    if [ "$REQUIREMENTS_FILE" != "" ]; then
+      echo -n run yum install -y
+      cat "$REQUIREMENTS_FILE" | while read package; do
+        echo -n " $package"
+      done
+      echo
+    fi
 ) | docker build --tag gitmod-rpmbuilder-$DISTRO-$DOCKER_TAG -
 
 echo Finished building the image

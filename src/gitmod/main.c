@@ -6,6 +6,7 @@
 #define FUSE_USE_VERSION 35
 
 #include <assert.h>
+#include <errno.h>
 #include <fuse.h>
 #include <stdio.h>
 #include <syslog.h>

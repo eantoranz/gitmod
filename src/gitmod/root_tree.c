@@ -3,6 +3,7 @@
  * Released under the terms of GPLv2
  */
 
+#include <errno.h>
 #include <syslog.h>
 #include "gitmod.h"
 
